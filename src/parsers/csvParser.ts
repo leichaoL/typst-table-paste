@@ -78,23 +78,16 @@ export function parseCSV(content: string): ParsedTable {
  * @returns 是否为 CSV
  */
 export function isCSV(content: string): boolean {
-  // 简单检测：包含逗号或制表符分隔的内容
-  const lines = content.trim().split('\n');
+  // Handle different line endings (CRLF and LF)
+  const lines = content.trim().split(/\r?\n/);
   if (lines.length < 2) {
     return false;
   }
 
-  // 检查是否有逗号或制表符分隔
+  // Check if has delimiters
   const hasCommas = lines.some(line => line.includes(','));
   const hasTabs = lines.some(line => line.includes('\t'));
 
-  if (!hasCommas && !hasTabs) {
-    return false;
-  }
-
-  // 检查是否有引号包裹的内容
-  const hasQuotes = lines.some(line => line.includes('"'));
-
-  // 如果有逗号/制表符，并且有引号或等号格式，很可能是 CSV/TSV
-  return (hasCommas || hasTabs) && (hasQuotes || detectCSVFormat(content) === 'equals' || hasTabs);
+  // More lenient: if has delimiters and multiple lines, it's likely CSV
+  return (hasCommas || hasTabs) && lines.length >= 2;
 }

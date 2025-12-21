@@ -5,20 +5,10 @@ tsconfig.json
 # Test data
 tables/**
 test-workspace/**
-
-# Test files
 test/**
-*.test.ts
-testCSV.js
-testSmallTable.js
-output_*.typ
 
 # Development documentation
-docs/**
-IMPROVEMENTS.md
-PROJECT_SUMMARY.md
-TROUBLESHOOTING.md
-USAGE.md
+TODO.md
 
 # Development tools
 .vscode/**
@@ -26,9 +16,12 @@ USAGE.md
 .git/**
 .claude/**
 
-# Temporary files
+# Temporary and build files
 *.log
 *.map
+
+# Old package files
+*.vsix
 
 # Keep only necessary files for runtime
 !out/**

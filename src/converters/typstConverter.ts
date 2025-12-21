@@ -14,17 +14,29 @@ export function convertToTypst(table: ParsedTable, config: Paste2TypConfig): str
     return '';
   }
 
+  // Filter out rows that are entirely empty
+  const filteredRows = rows.filter(row => {
+    // Check if row has at least one non-empty cell
+    return row.cells.some(cell => cell.content.trim().length > 0);
+  });
+
+  // Update table with filtered rows
+  const filteredTable: ParsedTable = {
+    ...table,
+    rows: filteredRows
+  };
+
   // 生成列宽定义
   const columns = generateColumns(columnCount);
 
   // 生成对齐方式
-  const alignment = generateAlignment(table, config);
+  const alignment = generateAlignment(filteredTable, config);
 
   // 生成边框样式
-  const stroke = generateStroke(table, config);
+  const stroke = generateStroke(filteredTable, config);
 
   // 生成单元格内容
-  const cells = generateCells(table, config);
+  const cells = generateCells(filteredTable, config);
 
   // 组装 Typst 表格代码
   const typstCode = `#table(
@@ -149,6 +161,9 @@ function generateCells(table: ParsedTable, config: Paste2TypConfig): string {
   // Detect header row for three-line table
   const headerRow = config.threeLineTable ? detectHeaderRow(table) : -1;
 
+  // Track if divider has been added (only add once)
+  let dividerAdded = false;
+
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex++) {
     const row = table.rows[rowIndex];
     const cellContents: string[] = [];
@@ -169,6 +184,25 @@ function generateCells(table: ParsedTable, config: Paste2TypConfig): string {
     // 补齐列数（如果某行列数不足）
     while (cellContents.length < columnCount) {
       cellContents.push('[]');
+    }
+
+    // Add divider before fixed effects/statistics section (only once)
+    if (config.addDividerAfterConstant && !dividerAdded && row.cells.length > 0) {
+      const firstCellContent = row.cells[0].content.toLowerCase().trim();
+      // Check if this row starts the fixed effects/statistics section
+      if (firstCellContent.includes('control') ||
+          firstCellContent.includes('fe') ||
+          firstCellContent.includes('fixed effect') ||
+          firstCellContent.includes('observation') ||
+          firstCellContent.includes('adj.') ||
+          firstCellContent === 'n' ||
+          firstCellContent.startsWith('r2') ||
+          firstCellContent.startsWith('r²')) {
+        cellLines.push('');
+        cellLines.push('  table.hline(),');
+        cellLines.push('');
+        dividerAdded = true;
+      }
     }
 
     if (cellPerLine) {
@@ -202,7 +236,6 @@ function generateCells(table: ParsedTable, config: Paste2TypConfig): string {
 
   // Add bottom line for three-line table
   if (config.threeLineTable) {
-    cellLines.push('');
     cellLines.push('  table.hline(),');
   }
 

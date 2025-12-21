@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { detectFormat, isTableFormat, extractTables } from './parsers/formatDetector';
 import { parseCSV } from './parsers/csvParser';
 import { parseRTF } from './parsers/rtfParser';
@@ -28,6 +29,14 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // 注册从文件转换命令
+  const convertFromFileCmd = vscode.commands.registerCommand(
+    'typst-table-paste.convertFromFile',
+    async () => {
+      await convertFromFileCommand();
+    }
+  );
+
   // 注册粘贴拦截器
   const pasteHandler = vscode.commands.registerTextEditorCommand(
     'typst-table-paste.paste',
@@ -37,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(convertCommand, pasteHandler);
+  context.subscriptions.push(convertCommand, convertFromFileCmd, pasteHandler);
 
   // 覆盖默认粘贴行为（如果启用自动转换）
   setupPasteInterceptor(context);
@@ -83,6 +92,19 @@ async function handlePaste(
     if (!clipboardText || clipboardText.trim().length < 10) {
       console.log('剪贴板为空或很短，执行默认粘贴');
       await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+      return;
+    }
+
+    // 调试：输出剪贴板内容的前200个字符
+    console.log('剪贴板内容预览:', clipboardText.substring(0, Math.min(200, clipboardText.length)));
+
+    // 检测是否包含文件路径
+    const filePaths = detectFilePaths(clipboardText);
+    console.log('检测到的文件路径:', filePaths);
+    if (filePaths.length > 0) {
+      console.log(`检测到 ${filePaths.length} 个文件路径，开始处理...`);
+      await handleFileCopy(filePaths, textEditor, config);
+      console.log('文件复制处理完成');
       return;
     }
 
@@ -192,6 +214,258 @@ async function handlePaste(
     // 执行默认粘贴
     await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
   }
+}
+
+/**
+ * 检测剪贴板内容是否包含文件路径
+ * @param text 剪贴板文本
+ * @returns 文件路径数组
+ */
+function detectFilePaths(text: string): string[] {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const filePaths: string[] = [];
+
+  for (const line of lines) {
+    let filePath = line;
+
+    // Remove surrounding quotes (from "Copy as path" in Windows)
+    if ((filePath.startsWith('"') && filePath.endsWith('"')) ||
+        (filePath.startsWith("'") && filePath.endsWith("'"))) {
+      filePath = filePath.slice(1, -1);
+    }
+
+    // Handle file:// URI format
+    if (filePath.startsWith('file:///')) {
+      // Convert file:///C:/path to C:\path (Windows)
+      filePath = filePath.replace('file:///', '').replace(/\//g, '\\');
+    } else if (filePath.startsWith('file://')) {
+      // Convert file://path to /path (Unix)
+      filePath = filePath.replace('file://', '');
+    }
+
+    // Check if line looks like a file path
+    // Windows: C:\path\file.csv
+    // Unix: /path/file.csv
+    // Only CSV files are supported for file conversion
+    const isWindowsPath = /^[a-zA-Z]:[\\\/].*\.csv$/i.test(filePath);
+    const isUnixPath = /^\/.*\.csv$/i.test(filePath);
+
+    if (isWindowsPath || isUnixPath) {
+      // Normalize path separators for Windows
+      if (isWindowsPath) {
+        filePath = filePath.replace(/\//g, '\\');
+      }
+
+      // Verify file exists
+      if (fs.existsSync(filePath)) {
+        filePaths.push(filePath);
+        console.log('检测到有效文件路径:', filePath);
+      } else {
+        console.log('文件不存在:', filePath);
+      }
+    }
+  }
+
+  return filePaths;
+}
+
+/**
+ * 处理文件复制功能
+ * 注意：仅支持 CSV 文件
+ * @param filePaths 文件路径数组
+ * @param textEditor 文本编辑器
+ * @param config 配置
+ */
+async function handleFileCopy(
+  filePaths: string[],
+  textEditor: vscode.TextEditor,
+  config: Paste2TypConfig
+): Promise<void> {
+  try {
+    const tables: Array<{content: string, format: 'csv', filename: string}> = [];
+    const errors: string[] = [];
+
+    // Read each file
+    for (const filePath of filePaths) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const format = detectFormat(content);
+
+        if (format === 'unknown') {
+          errors.push(`${path.basename(filePath)}: Unsupported format`);
+          continue;
+        }
+
+        if (format === 'rtf') {
+          errors.push(`${path.basename(filePath)}: RTF files are not supported. Please copy the table from Word and paste directly.`);
+          continue;
+        }
+
+        tables.push({
+          content,
+          format: 'csv',
+          filename: path.basename(filePath, path.extname(filePath))
+        });
+      } catch (error: any) {
+        errors.push(`${path.basename(filePath)}: ${error.message}`);
+      }
+    }
+
+    // Show errors if any
+    if (errors.length > 0) {
+      vscode.window.showWarningMessage(
+        `Some files could not be processed:\n${errors.join('\n')}`
+      );
+    }
+
+    if (tables.length === 0) {
+      vscode.window.showWarningMessage('No valid table files found');
+      return;
+    }
+
+    // Process tables
+    if (tables.length === 1) {
+      // Single file: direct conversion (no panel)
+      await processSingleFileTable(tables[0], textEditor, config);
+    } else {
+      // Multiple files: create panels
+      await processMultipleFileTables(tables, textEditor, config);
+    }
+  } catch (error) {
+    console.error('File copy error:', error);
+    vscode.window.showErrorMessage(`Failed to process files: ${error}`);
+  }
+}
+
+/**
+ * 处理单个文件表格
+ * 注意：仅支持 CSV 文件
+ * @param tableData 表格数据
+ * @param textEditor 文本编辑器
+ * @param config 配置
+ */
+async function processSingleFileTable(
+  tableData: {content: string, format: 'csv', filename: string},
+  textEditor: vscode.TextEditor,
+  config: Paste2TypConfig
+): Promise<void> {
+  // Convert table using existing logic
+  const typstCode = await convertClipboardToTypst(tableData.content, tableData.format, config);
+
+  if (typstCode) {
+    // Save and insert using existing logic
+    await saveAndInsertTable(typstCode, textEditor, config);
+  }
+}
+
+/**
+ * 处理多个文件表格（带Panel标题）
+ * 注意：仅支持 CSV 文件
+ * @param tables 表格数据数组
+ * @param textEditor 文本编辑器
+ * @param config 配置
+ */
+async function processMultipleFileTables(
+  tables: Array<{content: string, format: 'csv', filename: string}>,
+  textEditor: vscode.TextEditor,
+  config: Paste2TypConfig
+): Promise<void> {
+  // Convert all tables first
+  const convertedTables: Array<{typstCode: string, filename: string}> = [];
+
+  for (const tableData of tables) {
+    const typstCode = await convertClipboardToTypst(tableData.content, tableData.format, config);
+    if (typstCode) {
+      convertedTables.push({
+        typstCode,
+        filename: tableData.filename
+      });
+    }
+  }
+
+  if (convertedTables.length === 0) {
+    vscode.window.showWarningMessage('No tables could be converted');
+    return;
+  }
+
+  // Add panel titles to each table
+  const tablesWithPanels: string[] = [];
+  for (let i = 0; i < convertedTables.length; i++) {
+    const table = convertedTables[i];
+    const isFirstPanel = i === 0;
+    const tableWithPanel = addPanelTitle(table.typstCode, table.filename, isFirstPanel);
+    // Trim each table to remove trailing blank lines
+    tablesWithPanels.push(tableWithPanel.trim());
+  }
+
+  // Combine all tables with blank lines between them
+  const combinedContent = tablesWithPanels.join('\n\n');
+
+  // Save and insert
+  const currentFileUri = textEditor.document.uri;
+  const currentFileDir = path.dirname(currentFileUri.fsPath);
+  const tablesFolder = await ensureTypTablesFolder(currentFileDir);
+  const fileName = await generateTableFileName(tablesFolder);
+
+  await saveTableFile(tablesFolder, fileName, combinedContent);
+
+  const folderName = vscode.workspace
+    .getConfiguration('typstTablePaste')
+    .get<string>('tableFolder', 'typ_tables');
+  const relativePath = `${folderName}/${fileName}`;
+  const template = vscode.workspace
+    .getConfiguration('typstTablePaste')
+    .get<string>('includeTemplate', '#figure(include "{path}")');
+  const includeStatement = generateIncludeStatement(relativePath, template);
+
+  const position = textEditor.selection.active;
+  await textEditor.edit((editBuilder) => {
+    editBuilder.insert(position, includeStatement);
+  });
+
+  vscode.window.showInformationMessage(`Combined ${convertedTables.length} tables into ${fileName}`);
+}
+
+/**
+ * 为表格添加Panel标题
+ * @param typstCode Typst代码
+ * @param filename 文件名
+ * @param isFirstPanel 是否是第一个panel
+ * @returns 添加了Panel标题的Typst代码
+ */
+function addPanelTitle(typstCode: string, filename: string, isFirstPanel: boolean = false): string {
+  // Extract column count from the typst code
+  const columnMatch = typstCode.match(/columns:\s*\(([^)]+)\)/);
+  const columnCount = columnMatch ? columnMatch[1].split(',').length : 3;
+
+  // Find where to insert the panel title
+  const lines = typstCode.split('\n');
+  const resultLines: string[] = [];
+  let insertedPanel = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // For first panel, insert after the first table.hline()
+    // For subsequent panels, replace the first table.hline()
+    if (!insertedPanel && line.trim() === 'table.hline(),') {
+      if (isFirstPanel) {
+        // Keep the top border for first panel
+        resultLines.push(line);
+        resultLines.push(`  table.cell(colspan: ${columnCount})[*Panel: ${filename}*],`);
+        resultLines.push('  table.hline(),');
+      } else {
+        // Replace the top border for subsequent panels
+        resultLines.push(`  table.cell(colspan: ${columnCount})[*Panel: ${filename}*],`);
+        resultLines.push('  table.hline(),');
+      }
+      insertedPanel = true;
+    } else {
+      resultLines.push(line);
+    }
+  }
+
+  return resultLines.join('\n');
 }
 
 /**
@@ -334,6 +608,45 @@ async function convertTableCommand() {
     }
   } catch (error) {
     console.error('转换错误:', error);
+    vscode.window.showErrorMessage(`���换失败: ${error}`);
+  }
+}
+
+/**
+ * 从文件转换命令
+ */
+async function convertFromFileCommand() {
+  const config = getConfig();
+
+  try {
+    // 打开文件选择对话框（仅支持 CSV 文件）
+    const fileUris = await vscode.window.showOpenDialog({
+      canSelectMany: true,
+      filters: {
+        'CSV Files': ['csv']
+      },
+      title: '选择要转换的 CSV 文件'
+    });
+
+    if (!fileUris || fileUris.length === 0) {
+      return;
+    }
+
+    // 获取当前编辑器
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showWarningMessage('请先打开一个 Typst 文件');
+      return;
+    }
+
+    // 读取文件路径
+    const filePaths = fileUris.map(uri => uri.fsPath);
+    console.log('选择的文件:', filePaths);
+
+    // 使用现有的文件处理逻辑
+    await handleFileCopy(filePaths, editor, config);
+  } catch (error) {
+    console.error('从文件转换错误:', error);
     vscode.window.showErrorMessage(`转换失败: ${error}`);
   }
 }
@@ -390,6 +703,7 @@ function getConfig(): Paste2TypConfig {
       'Constant', 'Controls', 'Observations', 'N',
       'Fixed Effects', 'Year FE', 'Firm FE', 'Industry FE', 'Country FE'
     ]),
+    addDividerAfterConstant: config.get<boolean>('addDividerAfterConstant', false),
   };
 }
 

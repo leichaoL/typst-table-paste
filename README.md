@@ -1,5 +1,10 @@
 # Typst Table Paste
 
+[![Version](https://img.shields.io/visual-studio-marketplace/v/leichaoL.typst-table-paste)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
+[![License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
+
+English | [简体中文](README_zh.md)
+
 A VSCode extension that automatically converts RTF or CSV tables from clipboard to Typst table syntax.
 
 ## Features

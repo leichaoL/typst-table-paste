@@ -2,7 +2,7 @@
   "name": "typst-table-paste",
   "displayName": "Typst Table Paste",
   "description": "Paste and convert RTF/CSV tables to Typst table syntax",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "leichaoL",
   "author": "leichaoL",
   "license": "MIT",
@@ -33,6 +33,7 @@
   "activationEvents": [
     "onCommand:typst-table-paste.convertTable",
     "onCommand:typst-table-paste.paste",
+    "onCommand:typst-table-paste.convertFromFile",
     "onLanguage:typst"
   ],
   "main": "./out/extension.js",
@@ -45,6 +46,10 @@
       {
         "command": "typst-table-paste.paste",
         "title": "Typst Table Paste: Paste and Convert"
+      },
+      {
+        "command": "typst-table-paste.convertFromFile",
+        "title": "Typst Table Paste: Convert from File"
       }
     ],
     "keybindings": [
@@ -92,6 +97,11 @@
           "type": "array",
           "default": ["Constant", "Controls", "Observations", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"],
           "description": "List of terms to exclude from math mode conversion"
+        },
+        "typstTablePaste.addDividerAfterConstant": {
+          "type": "boolean",
+          "default": false,
+          "description": "Add a horizontal line (table.hline()) after the 'Constant' row to separate it from fixed effects section"
         },
         "typstTablePaste.tableFolder": {
           "type": "string",

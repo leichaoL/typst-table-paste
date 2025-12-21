@@ -64,4 +64,6 @@ export interface Paste2TypConfig {
   autoMathMode?: boolean;
   /** 数学模式排除列表 */
   mathModeExclusions?: string[];
+  /** 是否在 Constant 行后添加分割线 */
+  addDividerAfterConstant?: boolean;
 }

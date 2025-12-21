@@ -12,13 +12,16 @@ export function detectFormat(content: string): FormatType {
     return 'unknown';
   }
 
+  // Normalize line endings for consistent detection
+  const normalized = content.replace(/\r\n/g, '\n');
+
   // 先检测 RTF（RTF 有明确的标识）
-  if (isRTF(content)) {
+  if (isRTF(normalized)) {
     return 'rtf';
   }
 
   // 再检测 CSV
-  if (isCSV(content)) {
+  if (isCSV(normalized)) {
     return 'csv';
   }
 
