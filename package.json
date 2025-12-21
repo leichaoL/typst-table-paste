@@ -78,6 +78,21 @@
           "default": true,
           "description": "Preserve table alignment"
         },
+        "typstTablePaste.threeLineTable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use three-line table format (top, header bottom, bottom lines only)"
+        },
+        "typstTablePaste.autoMathMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically convert variable names and R² to math mode ($variable$)"
+        },
+        "typstTablePaste.mathModeExclusions": {
+          "type": "array",
+          "default": ["Constant", "Controls", "Observations", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"],
+          "description": "List of terms to exclude from math mode conversion"
+        },
         "typstTablePaste.tableFolder": {
           "type": "string",
           "default": "typ_tables",

@@ -85,15 +85,17 @@ function generateAlignment(table: ParsedTable, config: Paste2TypConfig): string 
  * @returns 边框样式字符串
  */
 function generateStroke(table: ParsedTable, config: Paste2TypConfig): string {
+  // Three-line tables use table.hline() and need stroke: none to remove grid lines
+  if (config.threeLineTable) {
+    return '\n  stroke: none,';
+  }
+
+  // If not using three-line table, check preserveBorders
   if (!config.preserveBorders) {
     return '';
   }
 
-  // 检测哪些行有边框
-  const topBorderRows = table.topBorderRows || [0];
-  const bottomBorderRows = table.bottomBorderRows || [table.rows.length - 1];
-
-  // 生成边框函数
+  // Generate stroke function for non-three-line tables
   const strokeFunc = `
   stroke: (x, y) => (
     top: if y == 0 { 1pt } else { 0pt },
@@ -101,6 +103,28 @@ function generateStroke(table: ParsedTable, config: Paste2TypConfig): string {
   ),`;
 
   return strokeFunc;
+}
+
+/**
+ * 检测表头行位置
+ * @param table 表格
+ * @returns 表头行索引
+ */
+function detectHeaderRow(table: ParsedTable): number {
+  if (table.rows.length === 0) {
+    return 0;
+  }
+
+  // 检测第一行是否包含列标识，如 (1), (2), (3) 等
+  if (table.rows.length > 1) {
+    const firstRowText = table.rows[0].cells.map(c => c.content).join(' ');
+    // 匹配 (1), (2), (I), (II), [1], [2] 等模式
+    if (/\([\dIVXivx]+\)|\[[\dIVXivx]+\]/.test(firstRowText)) {
+      return 1; // 第二行是表头
+    }
+  }
+
+  return 0; // 第一行是表头
 }
 
 /**
@@ -116,12 +140,29 @@ function generateCells(table: ParsedTable, config: Paste2TypConfig): string {
   // 判断是否需要每个单元格单独一行
   const cellPerLine = columnCount > 5;
 
+  // Add top line for three-line table
+  if (config.threeLineTable) {
+    cellLines.push('  table.hline(),');
+    cellLines.push('');
+  }
+
+  // Detect header row for three-line table
+  const headerRow = config.threeLineTable ? detectHeaderRow(table) : -1;
+
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex++) {
     const row = table.rows[rowIndex];
     const cellContents: string[] = [];
 
-    for (const cell of row.cells) {
-      const content = formatCellContent(cell.content, config.preserveSuperscript);
+    for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex++) {
+      const cell = row.cells[cellIndex];
+      const content = formatCellContent(
+        cell.content,
+        config.preserveSuperscript,
+        rowIndex,
+        cellIndex,
+        table,
+        config
+      );
       cellContents.push(`[${content}]`);
     }
 
@@ -150,6 +191,19 @@ function generateCells(table: ParsedTable, config: Paste2TypConfig): string {
         cellLines.push('');
       }
     }
+
+    // Add header bottom line for three-line table
+    if (config.threeLineTable && rowIndex === headerRow) {
+      cellLines.push('');
+      cellLines.push('  table.hline(),');
+      cellLines.push('');
+    }
+  }
+
+  // Add bottom line for three-line table
+  if (config.threeLineTable) {
+    cellLines.push('');
+    cellLines.push('  table.hline(),');
   }
 
   return cellLines.join('\n');
@@ -158,15 +212,25 @@ function generateCells(table: ParsedTable, config: Paste2TypConfig): string {
 /**
  * 快速转换（使用默认配置）
  * @param table 解析后的表格
+ * @param config 可选的配置对象
  * @returns Typst 表格代码
  */
-export function quickConvert(table: ParsedTable): string {
+export function quickConvert(table: ParsedTable, config?: Paste2TypConfig): string {
   const defaultConfig: Paste2TypConfig = {
     autoConvert: true,
     preserveSuperscript: true,
     preserveBorders: true,
     preserveAlignment: true,
+    threeLineTable: false,
+    autoMathMode: false,
+    mathModeExclusions: [
+      'Constant', 'Controls', 'Observations', 'N',
+      'Fixed Effects', 'Year FE', 'Firm FE', 'Industry FE', 'Country FE'
+    ],
   };
 
-  return convertToTypst(table, defaultConfig);
+  // Merge provided config with defaults
+  const finalConfig = config ? { ...defaultConfig, ...config } : defaultConfig;
+
+  return convertToTypst(table, finalConfig);
 }

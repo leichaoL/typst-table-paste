@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { detectFormat, isTableFormat } from './parsers/formatDetector';
+import { detectFormat, isTableFormat, extractTables } from './parsers/formatDetector';
 import { parseCSV } from './parsers/csvParser';
 import { parseRTF } from './parsers/rtfParser';
 import { quickConvert } from './converters/typstConverter';
@@ -18,7 +18,7 @@ import {
  */
 export function activate(context: vscode.ExtensionContext) {
   console.log('Typst Table Paste extension activated');
-  vscode.window.showInformationMessage('Typst Table Paste extension activated');
+  // vscode.window.showInformationMessage('Typst Table Paste extension activated');
 
   // 注册手动转换命令
   const convertCommand = vscode.commands.registerCommand(
@@ -91,8 +91,81 @@ async function handlePaste(
     console.log('检测到的格式:', format);
 
     if (format === 'unknown') {
-      // 不是表格格式，执行默认粘贴
-      console.log('不是表格格式，执行默认粘贴');
+      // 不是表格格式，尝试提取表格
+      console.log('不是明确的表格格式，尝试提取表格...');
+      const extractedTables = extractTables(clipboardText);
+
+      if (extractedTables.length > 0) {
+        console.log(`提取到 ${extractedTables.length} 个表格`);
+
+        if (extractedTables.length === 1) {
+          // 只有一个表格，直接转换
+          const table = extractedTables[0];
+          if (table.format !== 'unknown') {
+            const typstCode = await convertClipboardToTypst(table.content, table.format, config);
+
+            if (typstCode) {
+              // 保存并插入表格
+              await saveAndInsertTable(typstCode, textEditor, config);
+              return;
+            }
+          }
+        } else {
+          // 多个表格，提示用户选择
+          const choice = await vscode.window.showQuickPick(
+            [
+              { label: '转换所有表格', value: 'all' },
+              { label: '只转换第一个表格', value: 'first' },
+              { label: '取消', value: 'cancel' }
+            ],
+            {
+              placeHolder: `检测到 ${extractedTables.length} 个表格，请选择操作`
+            }
+          );
+
+          if (choice?.value === 'all') {
+            // 转换所有表格
+            const includeStatements: string[] = [];
+
+            for (const table of extractedTables) {
+              if (table.format !== 'unknown') {
+                const typstCode = await convertClipboardToTypst(table.content, table.format, config);
+                if (typstCode) {
+                  const statement = await saveTableAndGetInclude(typstCode, textEditor, config);
+                  if (statement) {
+                    includeStatements.push(statement);
+                  }
+                }
+              }
+            }
+
+            // 插入所有引用
+            if (includeStatements.length > 0) {
+              const position = textEditor.selection.active;
+              await textEditor.edit((editBuilder) => {
+                editBuilder.insert(position, includeStatements.join('\n\n'));
+              });
+
+              vscode.window.showInformationMessage(`已转换并保存 ${includeStatements.length} 个表格`);
+            }
+            return;
+          } else if (choice?.value === 'first') {
+            // 只转换第一个表格
+            const table = extractedTables[0];
+            if (table.format !== 'unknown') {
+              const typstCode = await convertClipboardToTypst(table.content, table.format, config);
+
+              if (typstCode) {
+                await saveAndInsertTable(typstCode, textEditor, config);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // 没有提取到表格，执行默认粘贴
+      console.log('未提取到表格，执行默认粘贴');
       await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
       return;
     }
@@ -110,22 +183,92 @@ async function handlePaste(
 
     console.log('转换成功，生成的代码长度:', typstCode.length);
 
+    // 保存并插入表格
+    await saveAndInsertTable(typstCode, textEditor, config);
+    console.log('handlePaste 函数执行完成');
+  } catch (error) {
+    console.error('粘贴处理错误:', error);
+    vscode.window.showErrorMessage(`转换失败: ${error}`);
+    // 执行默认粘贴
+    await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+  }
+}
+
+/**
+ * 保存表格并插入引用
+ * @param typstCode Typst 代码
+ * @param textEditor 文本编辑器
+ * @param config 配置
+ */
+async function saveAndInsertTable(
+  typstCode: string,
+  textEditor: vscode.TextEditor,
+  config: Paste2TypConfig
+): Promise<void> {
+  // 获取当前文件目录
+  const currentFileUri = textEditor.document.uri;
+  const currentFileDir = path.dirname(currentFileUri.fsPath);
+  console.log('当前文件目录:', currentFileDir);
+
+  // 创建 typ_tables 文件夹
+  const tablesFolder = await ensureTypTablesFolder(currentFileDir);
+  console.log('表格文件夹:', tablesFolder);
+
+  // 生成文件名
+  const fileName = await generateTableFileName(tablesFolder);
+  console.log('生成的文件名:', fileName);
+
+  // 保存表格文件
+  await saveTableFile(tablesFolder, fileName, typstCode);
+  console.log('表格文件已保存');
+
+  // 获取配置的引用模板
+  const template = vscode.workspace
+    .getConfiguration('typstTablePaste')
+    .get<string>('includeTemplate', '#figure(include "{path}")');
+
+  // 生成引用代码
+  const folderName = vscode.workspace
+    .getConfiguration('typstTablePaste')
+    .get<string>('tableFolder', 'typ_tables');
+  const relativePath = `${folderName}/${fileName}`;
+  const includeStatement = generateIncludeStatement(relativePath, template);
+  console.log('引用代码:', includeStatement);
+
+  // 插入引用
+  const position = textEditor.selection.active;
+  await textEditor.edit((editBuilder) => {
+    editBuilder.insert(position, includeStatement);
+  });
+
+  vscode.window.showInformationMessage(`表格已保存到 ${fileName}`);
+}
+
+/**
+ * 保存表格并返回引用代码
+ * @param typstCode Typst 代码
+ * @param textEditor 文本编辑器
+ * @param config 配置
+ * @returns 引用代码
+ */
+async function saveTableAndGetInclude(
+  typstCode: string,
+  textEditor: vscode.TextEditor,
+  config: Paste2TypConfig
+): Promise<string | null> {
+  try {
     // 获取当前文件目录
     const currentFileUri = textEditor.document.uri;
     const currentFileDir = path.dirname(currentFileUri.fsPath);
-    console.log('当前文件目录:', currentFileDir);
 
     // 创建 typ_tables 文件夹
     const tablesFolder = await ensureTypTablesFolder(currentFileDir);
-    console.log('表格文件夹:', tablesFolder);
 
     // 生成文件名
     const fileName = await generateTableFileName(tablesFolder);
-    console.log('生成的文件名:', fileName);
 
     // 保存表格文件
     await saveTableFile(tablesFolder, fileName, typstCode);
-    console.log('表格文件已保存');
 
     // 获取配置的引用模板
     const template = vscode.workspace
@@ -138,21 +281,11 @@ async function handlePaste(
       .get<string>('tableFolder', 'typ_tables');
     const relativePath = `${folderName}/${fileName}`;
     const includeStatement = generateIncludeStatement(relativePath, template);
-    console.log('引用代码:', includeStatement);
 
-    // 插入引用
-    const position = textEditor.selection.active;
-    await textEditor.edit((editBuilder) => {
-      editBuilder.insert(position, includeStatement);
-    });
-
-    vscode.window.showInformationMessage(`表格已保存到 ${fileName}`);
-    console.log('handlePaste 函数执行完成');
+    return includeStatement;
   } catch (error) {
-    console.error('粘贴处理错误:', error);
-    vscode.window.showErrorMessage(`转换失败: ${error}`);
-    // 执行默认粘贴
-    await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+    console.error('保存表格错误:', error);
+    return null;
   }
 }
 
@@ -231,7 +364,7 @@ async function convertClipboardToTypst(
     }
 
     // 转换为 Typst
-    const typstCode = quickConvert(table);
+    const typstCode = quickConvert(table, config);
     return typstCode;
   } catch (error) {
     console.error('转换错误:', error);
@@ -251,6 +384,12 @@ function getConfig(): Paste2TypConfig {
     preserveSuperscript: config.get<boolean>('preserveSuperscript', true),
     preserveBorders: config.get<boolean>('preserveBorders', true),
     preserveAlignment: config.get<boolean>('preserveAlignment', true),
+    threeLineTable: config.get<boolean>('threeLineTable', false),
+    autoMathMode: config.get<boolean>('autoMathMode', false),
+    mathModeExclusions: config.get<string[]>('mathModeExclusions', [
+      'Constant', 'Controls', 'Observations', 'N',
+      'Fixed Effects', 'Year FE', 'Firm FE', 'Industry FE', 'Country FE'
+    ]),
   };
 }
 

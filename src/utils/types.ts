@@ -58,4 +58,10 @@ export interface Paste2TypConfig {
   preserveBorders: boolean;
   /** 是否保留对齐方式 */
   preserveAlignment: boolean;
+  /** 是否使用三线表格式 */
+  threeLineTable?: boolean;
+  /** 是否自动转换为数学模式 */
+  autoMathMode?: boolean;
+  /** 数学模式排除列表 */
+  mathModeExclusions?: string[];
 }

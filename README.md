@@ -8,18 +8,22 @@ A VSCode extension that automatically converts RTF or CSV tables from clipboard 
 - ✅ **Multiple Format Support**:
   - RTF tables (copied from Word, Excel)
   - CSV tables (standard comma-separated and equals-separated formats)
+  - Extract tables from entire document content
 - ✅ **Format Preservation**:
   - Significance markers (`***`, `**`, `*`) converted to Typst superscript syntax
   - Table border styles (top lines, bottom lines, etc.)
+  - Three-line table format for academic papers
   - Alignment (left, center, right)
   - Automatic column width settings
 - ✅ **Smart Formatting**:
   - Small tables (≤ 5 columns): All cells in one row, with blank lines between rows
   - Large tables (> 5 columns): Each cell on its own line, with two blank lines between rows
+  - Auto-convert variable names and R² to math mode (optional)
 - ✅ **File Management**:
   - Tables saved to separate files in `typ_tables/` folder
   - Automatic file naming (`table_001.typ`, `table_002.typ`, ...)
   - Insert reference code at paste location
+  - Support for multiple tables in one paste operation
 
 ## Installation
 
@@ -73,6 +77,9 @@ Search for "Typst Table Paste" in VSCode settings to find the following options:
 - `typstTablePaste.preserveSuperscript`: Preserve significance markers as superscript (default: true)
 - `typstTablePaste.preserveBorders`: Preserve table border styles (default: true)
 - `typstTablePaste.preserveAlignment`: Preserve table alignment (default: true)
+- `typstTablePaste.threeLineTable`: Use three-line table format (top, header bottom, bottom lines only) (default: false)
+- `typstTablePaste.autoMathMode`: Automatically convert variable names and R² to math mode ($variable$) (default: false)
+- `typstTablePaste.mathModeExclusions`: List of terms to exclude from math mode conversion (default: ["Constant", "Controls", "Observations", "R-squared", "Adjusted R-squared", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"])
 - `typstTablePaste.tableFolder`: Folder name for saving table files (default: "typ_tables")
 - `typstTablePaste.includeTemplate`: Template for table references (default: "#figure(include \"{path}\")")
 
