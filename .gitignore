@@ -1,0 +1,39 @@
+# Compiled output
+out/
+*.js
+*.js.map
+
+# Dependencies
+node_modules/
+
+# Test data
+tables/
+
+# Test workspace
+test-workspace/
+
+# Temporary files
+*.typ
+output_*.typ
+testCSV.js
+testSmallTable.js
+
+# IDE configuration (keep examples)
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Claude configuration
+.claude/
+
+# Log files
+*.log
+npm-debug.log*
+
+
+TODO.md
+*.vsix

@@ -1,0 +1,34 @@
+# Source code (only package compiled files)
+src/**
+tsconfig.json
+
+# Test data
+tables/**
+test-workspace/**
+
+# Test files
+test/**
+*.test.ts
+testCSV.js
+testSmallTable.js
+output_*.typ
+
+# Development documentation
+docs/**
+IMPROVEMENTS.md
+PROJECT_SUMMARY.md
+TROUBLESHOOTING.md
+USAGE.md
+
+# Development tools
+.vscode/**
+.gitignore
+.git/**
+.claude/**
+
+# Temporary files
+*.log
+*.map
+
+# Keep only necessary files for runtime
+!out/**
