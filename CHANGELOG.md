@@ -2,6 +2,48 @@
 
 All notable changes to the "Typst Table Paste" extension will be documented in this file.
 
+## [0.4.0] - 2025-12-24
+
+### Added
+
+- **Excel file import support**: Import Excel files (.xlsx, .xls, .xlsm) directly via "Convert from File" command
+- **Multi-sheet Excel handling**: Select specific sheets or convert all sheets from Excel files
+- **Enhanced math mode conversion**: Support for variables with commas, slashes, and parentheses (e.g., `Job tenure, in years`, `ln(wage/GNP deflator)`)
+- **Stata constant recognition**: Added `_cons` and `cons` to boundary keywords and exclusion list
+
+### Fixed
+
+- Fixed underscore escaping in variable names (e.g., `log_gdp` now correctly escapes to `log\_gdp`)
+- Fixed superscript placeholder escaping bug that caused `{{SUPER0}}` to appear in output
+- Fixed exclusion list matching to avoid false positives (e.g., "N" in "GNP" no longer triggers exclusion)
+- Improved math mode detection for variables starting with numbers (e.g., `1 if not SMSA`)
+
+### Improved
+
+- Enhanced math mode conversion regex to support more variable name patterns
+- Better number detection to distinguish between statistical values and variable names
+- More precise exclusion list matching (single-letter exclusions use exact match)
+
+### 新增
+
+- **Excel 文件导入支持**：通过"从文件转换"命令直接导入 Excel 文件（.xlsx、.xls、.xlsm）
+- **多工作表 Excel 处理**：从 Excel 文件中选择特定工作表或转换所有工作表
+- **增强的数学模式转换**：支持包含逗号、斜杠和括号的变量（例如 `Job tenure, in years`、`ln(wage/GNP deflator)`）
+- **Stata 常数识别**：将 `_cons` 和 `cons` 添加到边界关键词和排除列表
+
+### 修复
+
+- 修复了变量名中的下划线转义问题（例如 `log_gdp` 现在正确转义为 `log\_gdp`）
+- 修复了上标占位符转义错误，该错误导致 `{{SUPER0}}` 出现在输出中
+- 修复了排除列表匹配以避免误报（例如"GNP"中的"N"不再触发排除）
+- 改进了以数字开头的变量的数学模式检测（例如 `1 if not SMSA`）
+
+### 改进
+
+- 增强了数学模式转换正则表达式以支持更多变量名模式
+- 更好的数字检测以区分统计值和变量名
+- 更精确的排除列表匹配（单字母排除使用精确匹配）
+
 ## [0.3.1] - 2025-12-24
 
 ### Documentation
