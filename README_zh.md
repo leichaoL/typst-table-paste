@@ -14,7 +14,7 @@
 
 ## 🖼️ 演示
 
-![Paste from RTF to Typst](assets/demo-paste.gif)
+![demo-paste.gif](https://s2.loli.net/2025/12/24/fXKEjgI2Jtx3paB.gif)
 
 ## 🚀 快速开始
 

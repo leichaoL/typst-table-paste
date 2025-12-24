@@ -14,7 +14,7 @@ A VSCode extension that automatically converts RTF or CSV tables from the clipbo
 
 ## 🖼️ Demo
 
-![Paste from Excel to Typst](assets/demo-paste.gif)
+![demo-paste.gif](https://s2.loli.net/2025/12/24/fXKEjgI2Jtx3paB.gif)
 
 ## 🚀 Quick Start
 
