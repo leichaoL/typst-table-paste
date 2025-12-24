@@ -2,7 +2,7 @@
   "name": "typst-table-paste",
   "displayName": "Typst Table Paste",
   "description": "Paste and convert RTF/CSV tables to Typst table syntax",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "leichaoL",
   "author": "leichaoL",
   "license": "MIT",

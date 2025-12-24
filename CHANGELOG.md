@@ -2,6 +2,14 @@
 
 All notable changes to the "Typst Table Paste" extension will be documented in this file.
 
+## [0.3.1] - 2025-12-24
+
+### Documentation
+
+- Documentation improvements: Synchronized EN/CN READMEs, fixed config docs, added more examples
+- 文档改进：同步中英文 README，修复配置文档错误，添加更多示例和功能说明
+
+
 ## [0.3.0] - 2025-12-21
 
 ### Added
