@@ -31,8 +31,9 @@ Note: Use `Ctrl+Shift+V` instead of `Ctrl+V` to avoid conflicts with other paste
 
 1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P`) to open the command palette.
 2. Type "Typst Table Paste: Convert From File".
-3. Select one or more CSV files to import.
-4. Tables are saved to `typ_tables/`; multiple CSV files are merged into one table, and a reference is inserted at the cursor.
+3. Select one or more CSV or Excel files to import.
+4. For Excel files with multiple sheets, choose which sheet(s) to convert.
+5. Tables are saved to `typ_tables/`; multiple files are merged into one table, and a reference is inserted at the cursor.
 
 ## ✨ Features
 
@@ -201,6 +202,12 @@ You can customize how table references are inserted using the `includeTemplate` 
 - **Standard CSV**: Comma-separated, e.g., `Header1,Value1,Value2`
 - **Equals-separated CSV**: Using `="value"` format, e.g., `="Header1",="Value1"`
 
+### Excel Format
+
+- **Excel files**: `.xlsx`, `.xls`, `.xlsm` formats
+- **Multiple sheets**: Choose specific sheets or convert all sheets
+- **Automatic data extraction**: Extracts formatted values from cells
+
 ### RTF Format
 
 - Tables copied from Microsoft Word
@@ -278,13 +285,8 @@ vsce package
 
 ## 🧭 Planned
 
-- Import Excel files directly
 - Copy tables directly from Stata console
 
-## 🐛 Known Issues
-
-- Underscore symbols `_` in variable names are not escaped
-- Some variable names cannot be automatically converted to math mode
 
 ## 📝 Changelog
 

@@ -23,12 +23,13 @@ export function handleSuperscript(text: string): string {
 export function escapeTypstSpecialChars(text: string): string {
   // 在 Typst 的 [] 内容块中，某些字符需要转义
   // 但星号在 #super[] 中不需要转义
-  // 需要转义的字符：# $ [ ] < > @ \ *
+  // 需要转义的字符：# $ [ ] < > @ \ * _
   return text
     .replace(/\\/g, '\\\\')  // 反斜杠
     .replace(/\*/g, '\\*')   // 星号（新增）
     .replace(/#/g, '\\#')    // 井号（除非是函数调用）
     .replace(/\$/g, '\\$')   // 美元符号
+    .replace(/_/g, '\\_')    // 下划线
     .replace(/</g, '\\<')    // 小于号
     .replace(/>/g, '\\>')    // 大于号
     .replace(/@/g, '\\@');   // at 符号
@@ -96,7 +97,7 @@ export function formatCellContent(
   // 提取所有 #super[] 部分
   formatted = formatted.replace(superscriptPattern, (match) => {
     superscripts.push(match);
-    return `__SUPER_${index++}__`;
+    return `{{SUPER${index++}}}`;
   });
 
   // 转义特殊字符（但不包括已提取的 #super[] 部分）
@@ -107,7 +108,7 @@ export function formatCellContent(
     // 转义 #super[] 中的星号
     // #super[***] → #super[\*\*\*]
     const escapedSup = sup.replace(/\*/g, '\\*');
-    formatted = formatted.replace(`__SUPER_${i}__`, escapedSup);
+    formatted = formatted.replace(`{{SUPER${i}}}`, escapedSup);
   });
 
   return formatted;
@@ -153,14 +154,23 @@ function shouldConvertToMathMode(
   }
 
   // 排除列表中的项不转换
-  if (exclusions.some(ex => content.includes(ex))) {
+  // 使用更精确的匹配：完整匹配或单词边界匹配
+  if (exclusions.some(ex => {
+    // 对于单字母排除项（如 "N"），使用完整匹配
+    if (ex.length === 1) {
+      return content.trim() === ex;
+    }
+    // 对于多字符排除项，使用不区分大小写的包含检查
+    return content.toLowerCase().includes(ex.toLowerCase());
+  })) {
     return false;
   }
 
-  // 排除纯数字或以数字开头的内容（这些是统计值）
-  // 例如：0.05, -0.06, (0.01), [0.02], 123
-  // 但不排除 log(Min_invest) 这样的函数形式
-  if (/^[-+]?\d/.test(content.trim()) && !/^log\(|^ln\(|^exp\(/i.test(content.trim())) {
+  // 排除纯数字或以数字开头的统计值（这些是统计值）
+  // 例如：0.05, -0.06, (0.01), [0.02], 123, 0.22***
+  // 但不排除变量名如 "1 if not SMSA", "1 if south"（这些是变量名）
+  // 也不排除 log(Min_invest) 这样的函数形式
+  if (/^[-+]?\d+\.?\d*\**$/.test(content.trim()) || /^\([-+]?\d+\.?\d*\)$/.test(content.trim())) {
     return false;
   }
 
@@ -177,10 +187,11 @@ function shouldConvertToMathMode(
 
   // 第一列的变量名转换逻辑
   if (colIndex === 0) {
-    // 查找分界线：Constant, Controls, Fixed Effects, Observations 等
+    // 查找分界线：Constant, _cons, Controls, Fixed Effects, Observations 等
     // 这些关键词标志着变量部分的结束
     const boundaryKeywords = [
-      'constant', 'controls', 'fixed effect', 'observations',
+      'constant', '_cons', 'cons',
+      'controls', 'fixed effect', 'observations',
       'n =', 'n=',
       'year fe', 'firm fe', 'industry fe', 'country fe', 'time fe', 'individual fe',
       'institution fe'
@@ -230,10 +241,10 @@ function convertToMathMode(content: string): string {
     return `$${funcName}(italic("${varName}"))$`;
   }
 
-  // 如果内容是变量名（字母、数字、下划线、空格组合）
-  // 匹配：VarA, var_b, Var A, GDP growth, X1, alpha_1 等
-  // 不匹配：纯数字、包含特殊符号的内容
-  if (/^[a-zA-Z_][a-zA-Z0-9_\s]*$/.test(content)) {
+  // 如果内容是变量名（字母、数字、下划线、空格、逗号、句点、连字符、斜杠、括号组合）
+  // 匹配：VarA, var_b, Var A, GDP growth, X1, alpha_1, Job tenure, in years, 1 if not SMSA, ln(wage/GNP deflator) 等
+  // 不匹配：纯数字、包含其他特殊符号的内容
+  if (/^[a-zA-Z0-9_][a-zA-Z0-9_\s,./()\[\]-]*$/.test(content)) {
     // 检查是否是单个字母（不含数字、下划线、空格）
     if (/^[a-zA-Z]$/.test(content)) {
       // 单个字母直接使用数学模式

@@ -31,8 +31,9 @@
 
 1. 按 `Ctrl+Shift+P`（或 `Cmd+Shift+P`）打开命令面板
 2. 输入 "Typst Table Paste: Convert From File"
-3. 选择 CSV 文件（可多选）进行导入
-4. 表格会保存到 `typ_tables/`，多个 CSV 文件会合并成一张表，并在光标位置插入引用。
+3. 选择 CSV 或 Excel 文件（可多选）进行导入
+4. 对于包含多个工作表的 Excel 文件，选择要转换的工作表
+5. 表格会保存到 `typ_tables/`，多个文件会合并成一张表，并在光标位置插入引用。
 
 ## ✨ 功能特性
 
@@ -207,6 +208,12 @@ ln(population),0.23**,0.25**
 - **标准 CSV**：逗号分隔，例如 `Header1,Value1,Value2`
 - **等号分隔 CSV**：使用 `="value"` 格式，例如 `="Header1",="Value1"`
 
+### Excel 格式
+
+- **Excel 文件**：支持 `.xlsx`、`.xls`、`.xlsm` 格式
+- **多工作表**：可选择特定工作表或转换所有工作表
+- **自动数据提取**：从单元格中提取格式化后的值
+
 ### RTF 格式
 
 - 从 Microsoft Word 复制的表格
@@ -284,9 +291,6 @@ vsce package
 
 ## 🧭 已知问题与待实现功能
 
-- [ ] 变量名称中的下划线符号 `_` 未进行转义
-- [ ] 部分变量名称未能自动转成数学模式
-- [ ] 直接导入 Excel
 - [ ] 直接从 Stata console 中复制表格
 
 ## 📝 更新日志

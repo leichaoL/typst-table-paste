@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { detectFormat, isTableFormat, extractTables } from './parsers/formatDetector';
 import { parseCSV } from './parsers/csvParser';
 import { parseRTF } from './parsers/rtfParser';
+import { parseExcel, getExcelSheetNames, isExcelFile } from './parsers/excelParser';
 import { quickConvert } from './converters/typstConverter';
 import { Paste2TypConfig } from './utils/types';
 import {
@@ -271,7 +272,7 @@ function detectFilePaths(text: string): string[] {
 
 /**
  * 处理文件复制功能
- * 注意：仅支持 CSV 文件
+ * 支持 CSV 和 Excel 文件
  * @param filePaths 文件路径数组
  * @param textEditor 文本编辑器
  * @param config 配置
@@ -282,30 +283,84 @@ async function handleFileCopy(
   config: Paste2TypConfig
 ): Promise<void> {
   try {
-    const tables: Array<{content: string, format: 'csv', filename: string}> = [];
+    const tables: Array<{content: string, format: 'csv' | 'excel', filename: string, filePath?: string, sheetName?: string}> = [];
     const errors: string[] = [];
 
     // Read each file
     for (const filePath of filePaths) {
       try {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const format = detectFormat(content);
+        // Check if it's an Excel file
+        if (isExcelFile(filePath)) {
+          // Get sheet names
+          const sheetNames = getExcelSheetNames(filePath);
 
-        if (format === 'unknown') {
-          errors.push(`${path.basename(filePath)}: Unsupported format`);
-          continue;
+          if (sheetNames.length === 0) {
+            errors.push(`${path.basename(filePath)}: No sheets found`);
+            continue;
+          }
+
+          // If multiple sheets, ask user which one to convert
+          let selectedSheet: string;
+          if (sheetNames.length > 1) {
+            const selection = await vscode.window.showQuickPick(
+              [...sheetNames, '--- Convert All Sheets ---'],
+              {
+                placeHolder: `Select sheet from ${path.basename(filePath)}`,
+                title: 'Select Excel Sheet'
+              }
+            );
+
+            if (!selection) {
+              continue; // User cancelled
+            }
+
+            if (selection === '--- Convert All Sheets ---') {
+              // Add all sheets as separate tables
+              for (const sheetName of sheetNames) {
+                tables.push({
+                  content: '', // Will be parsed later
+                  format: 'excel',
+                  filename: `${path.basename(filePath, path.extname(filePath))}_${sheetName}`,
+                  filePath,
+                  sheetName
+                });
+              }
+              continue;
+            } else {
+              selectedSheet = selection;
+            }
+          } else {
+            selectedSheet = sheetNames[0];
+          }
+
+          tables.push({
+            content: '', // Will be parsed later
+            format: 'excel',
+            filename: path.basename(filePath, path.extname(filePath)),
+            filePath,
+            sheetName: selectedSheet
+          });
+        } else {
+          // CSV file
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const format = detectFormat(content);
+
+          if (format === 'unknown') {
+            errors.push(`${path.basename(filePath)}: Unsupported format`);
+            continue;
+          }
+
+          if (format === 'rtf') {
+            errors.push(`${path.basename(filePath)}: RTF files are not supported. Please copy the table from Word and paste directly.`);
+            continue;
+          }
+
+          tables.push({
+            content,
+            format: 'csv',
+            filename: path.basename(filePath, path.extname(filePath))
+          });
         }
-
-        if (format === 'rtf') {
-          errors.push(`${path.basename(filePath)}: RTF files are not supported. Please copy the table from Word and paste directly.`);
-          continue;
-        }
-
-        tables.push({
-          content,
-          format: 'csv',
-          filename: path.basename(filePath, path.extname(filePath))
-        });
       } catch (error: any) {
         errors.push(`${path.basename(filePath)}: ${error.message}`);
       }
@@ -339,18 +394,26 @@ async function handleFileCopy(
 
 /**
  * 处理单个文件表格
- * 注意：仅支持 CSV 文件
+ * 支持 CSV 和 Excel 文件
  * @param tableData 表格数据
  * @param textEditor 文本编辑器
  * @param config 配置
  */
 async function processSingleFileTable(
-  tableData: {content: string, format: 'csv', filename: string},
+  tableData: {content: string, format: 'csv' | 'excel', filename: string, filePath?: string, sheetName?: string},
   textEditor: vscode.TextEditor,
   config: Paste2TypConfig
 ): Promise<void> {
-  // Convert table using existing logic
-  const typstCode = await convertClipboardToTypst(tableData.content, tableData.format, config);
+  let typstCode: string | null = null;
+
+  if (tableData.format === 'excel' && tableData.filePath) {
+    // Parse Excel file
+    const parsedTable = parseExcel(tableData.filePath, tableData.sheetName);
+    typstCode = quickConvert(parsedTable, config);
+  } else if (tableData.format === 'csv') {
+    // Convert CSV table using existing logic
+    typstCode = await convertClipboardToTypst(tableData.content, 'csv', config);
+  }
 
   if (typstCode) {
     // Save and insert using existing logic
@@ -360,13 +423,13 @@ async function processSingleFileTable(
 
 /**
  * 处理多个文件表格（带Panel标题）
- * 注意：仅支持 CSV 文件
+ * 支持 CSV 和 Excel 文件
  * @param tables 表格数据数组
  * @param textEditor 文本编辑器
  * @param config 配置
  */
 async function processMultipleFileTables(
-  tables: Array<{content: string, format: 'csv', filename: string}>,
+  tables: Array<{content: string, format: 'csv' | 'excel', filename: string, filePath?: string, sheetName?: string}>,
   textEditor: vscode.TextEditor,
   config: Paste2TypConfig
 ): Promise<void> {
@@ -374,7 +437,17 @@ async function processMultipleFileTables(
   const convertedTables: Array<{typstCode: string, filename: string}> = [];
 
   for (const tableData of tables) {
-    const typstCode = await convertClipboardToTypst(tableData.content, tableData.format, config);
+    let typstCode: string | null = null;
+
+    if (tableData.format === 'excel' && tableData.filePath) {
+      // Parse Excel file
+      const parsedTable = parseExcel(tableData.filePath, tableData.sheetName);
+      typstCode = quickConvert(parsedTable, config);
+    } else if (tableData.format === 'csv') {
+      // Convert CSV table using existing logic
+      typstCode = await convertClipboardToTypst(tableData.content, 'csv', config);
+    }
+
     if (typstCode) {
       convertedTables.push({
         typstCode,
@@ -619,13 +692,15 @@ async function convertFromFileCommand() {
   const config = getConfig();
 
   try {
-    // 打开文件选择对话框（仅支持 CSV 文件）
+    // 打开文件选择对话框（支持 CSV 和 Excel 文件）
     const fileUris = await vscode.window.showOpenDialog({
       canSelectMany: true,
       filters: {
-        'CSV Files': ['csv']
+        'Table Files': ['csv', 'xlsx', 'xls', 'xlsm'],
+        'CSV Files': ['csv'],
+        'Excel Files': ['xlsx', 'xls', 'xlsm']
       },
-      title: '选择要转换的 CSV 文件'
+      title: '选择要转换的表格文件'
     });
 
     if (!fileUris || fileUris.length === 0) {
