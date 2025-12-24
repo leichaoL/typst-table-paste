@@ -23,6 +23,7 @@ A VSCode extension that automatically converts RTF or CSV tables from the clipbo
 1. Copy a table from Excel, Word, or a CSV source.
 2. In a `.typ` file, press `Ctrl+Shift+V` (or `Cmd+Shift+V`).
 3. A table file is saved to `typ_tables/`, and a reference is inserted at the cursor.
+4. You can edit the table file separately to keep your main file clean.
 
 Note: Use `Ctrl+Shift+V` instead of `Ctrl+V` to avoid conflicts with other paste extensions (like typst-figure-pastetools).
 
@@ -35,10 +36,23 @@ Note: Use `Ctrl+Shift+V` instead of `Ctrl+V` to avoid conflicts with other paste
 
 ## ✨ Features
 
+### Core Features
+
 - RTF/CSV table detection (including equals-separated CSV)
 - Preserve significance markers, borders, and alignment
-- Automatic layout for small vs. large tables
+- Automatic layout for small vs. large tables (≤5 columns: compact, >5 columns: expanded)
 - Save table files and insert references automatically
+- Sequential file naming (`table_001.typ`, `table_002.typ`, etc.)
+
+### Academic Paper Support
+- Three-line table format and automatic divider insertion (optional)
+- Automatic math mode conversion for variable names and R² (optional)
+- Interaction term formatting (`*` → `times`)
+- Greek letter recognition
+
+### Advanced Features
+- File path detection from clipboard (supports Windows/Unix paths, quoted paths, file:// URIs)
+- Panel system for multiple CSV file imports
 
 ## 📦 Installation
 
@@ -107,6 +121,79 @@ Large table (7 columns):
 )
 ```
 
+### Math Mode Conversion Example
+
+When `autoMathMode` is enabled:
+
+**Input (CSV):**
+```csv
+Variable,(1),(2)
+log_gdp,0.45***,0.52***
+gdp_growth,0.12*,0.15**
+alpha * beta,0.08,0.10
+ln(population),0.23**,0.25**
+```
+
+**Output (Typst):**
+```typst
+#table(
+  columns: (auto, 1fr, 1fr),
+  align: (left, center, center),
+
+  [Variable], [(1)], [(2)],
+
+  [$log_"gdp"$], [0.45#super[\*\*\*]], [0.52#super[\*\*\*]],
+  [$"gdp"_"growth"$], [0.12#super[\*]], [0.15#super[\*\*]],
+  [$alpha times beta$], [0.08], [0.10],
+  [$ln("population")$], [0.23#super[\*\*]], [0.25#super[\*\*]],
+)
+```
+
+### Three-Line Table Example
+
+When `threeLineTable` is enabled:
+
+```typst
+#table(
+  columns: (auto, 1fr, 1fr),
+  align: (left, center, center),
+  stroke: none,
+
+  table.hline(),
+  [], [(1)], [(2)],
+  table.hline(stroke: 0.5pt),
+
+  [Variable], [Coef], [SE],
+  [X1], [0.05#super[\*\*\*]], [0.01],
+
+  table.hline(),
+)
+```
+
+### Custom Include Template Examples
+
+You can customize how table references are inserted using the `includeTemplate` setting:
+
+**Default:**
+```json
+"typstTablePaste.includeTemplate": "#figure(include \"{path}\")"
+```
+
+**With caption:**
+```json
+"typstTablePaste.includeTemplate": "#figure(include \"{path}\", caption: [Table])"
+```
+
+**Simple include:**
+```json
+"typstTablePaste.includeTemplate": "#include \"{path}\""
+```
+
+**Custom wrapper:**
+```json
+"typstTablePaste.includeTemplate": "#block(include \"{path}\")"
+```
+
 ## 🧩 Supported Formats
 
 ### CSV Format
@@ -132,7 +219,7 @@ Search for "Typst Table Paste" in VSCode settings.
 | `typstTablePaste.preserveAlignment` | `true` | Preserve table alignment |
 | `typstTablePaste.threeLineTable` | `false` | Use three-line table format (top, header bottom, bottom lines only) |
 | `typstTablePaste.autoMathMode` | `false` | Automatically convert variable names and R² to math mode |
-| `typstTablePaste.mathModeExclusions` | `["Constant", "Controls", "Observations", "R-squared", "Adjusted R-squared", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"]` | Terms to exclude from math mode conversion |
+| `typstTablePaste.mathModeExclusions` | `["Constant", "Controls", "Observations", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"]` | Terms to exclude from math mode conversion |
 | `typstTablePaste.addDividerAfterConstant` | `false` | Add a divider after the `Constant` row |
 | `typstTablePaste.tableFolder` | `"typ_tables"` | Folder name for saving table files |
 | `typstTablePaste.includeTemplate` | `"#figure(include \"{path}\")"` | Template for table references |
@@ -156,6 +243,7 @@ Example `settings.json`:
 - **Conflicts with other paste extensions**: Prefer `Ctrl+Shift+V`, or remap the shortcut to avoid collisions.
 - **R² or variables not in math mode**: Enable `typstTablePaste.autoMathMode` and ensure the term is not in `mathModeExclusions`.
 - **Change output folder**: Set `typstTablePaste.tableFolder` to a custom path.
+- **Cannot import RTF files directly**: RTF files can only be processed from clipboard (copy from Word/Excel). Use "Convert from File" only for CSV files.
 
 ## 🔒 Privacy
 
@@ -192,6 +280,11 @@ vsce package
 
 - Import Excel files directly
 - Copy tables directly from Stata console
+
+## 🐛 Known Issues
+
+- Underscore symbols `_` in variable names are not escaped
+- Some variable names cannot be automatically converted to math mode
 
 ## 📝 Changelog
 

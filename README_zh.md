@@ -3,6 +3,8 @@
 [![en](https://img.shields.io/badge/lang-English-red.svg)](README.md)
 [![cn](https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-yellow.svg)](README_zh.md)
 [![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
+![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/i/leichaoL.typst-table-paste.svg)
+![GitHub all releases](https://img.shields.io/github/downloads/leichaoL/typst-table-paste/total.svg)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/leichaoL.typst-table-paste)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 [![License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
 
@@ -34,12 +36,25 @@
 
 ## ✨ 功能特性
 
+### 核心功能
+
 - RTF/CSV 表格识别（支持等号分隔 CSV）
 - 显著性标记、边框、对齐方式等格式保留
-- 小/大表格的自动排版策略
+- 小/大表格的自动排版策略（≤5 列：紧凑格式，>5 列：展开格式）
 - 表格文件自动保存与引用插入
+- 顺序文件命名（`table_001.typ`、`table_002.typ` 等）
+
+### 学术论文支持
+
 - 自动转换成三线表或者是自动隔开回归系数（可选）
 - 自动将变量名和 R² 转换为数学模式（可选）
+- 交互项格式化（`*` → `times`）
+- 希腊字母识别
+
+### 高级功能
+
+- 剪贴板文件路径检测（支持 Windows/Unix 路径、引号路径、file:// URI）
+- 多个 CSV 文件导入的面板系统
 
 ## 📦 安装
 
@@ -86,6 +101,105 @@
 )
 ```
 
+大表格（7 列）：
+
+```typst
+#table(
+  columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+  align: (left, center, center, center, center, center, center),
+
+  [],
+  [(1)],
+  [(2)],
+  [(3)],
+  [(4)],
+  [(5)],
+  [(6)],
+
+
+  [Variable],
+  [Coef1],
+  [Coef2],
+  [Coef3],
+  [Coef4],
+  [Coef5],
+  [Coef6],
+)
+```
+
+### 数学模式转换示例
+
+当启用 `autoMathMode` 时：
+
+**输入（CSV）：**
+```csv
+Variable,(1),(2)
+log_gdp,0.45***,0.52***
+gdp_growth,0.12*,0.15**
+alpha * beta,0.08,0.10
+ln(population),0.23**,0.25**
+```
+
+**输出（Typst）：**
+```typst
+#table(
+  columns: (auto, 1fr, 1fr),
+  align: (left, center, center),
+
+  [Variable], [(1)], [(2)],
+
+  [$log_"gdp"$], [0.45#super[\*\*\*]], [0.52#super[\*\*\*]],
+  [$"gdp"_"growth"$], [0.12#super[\*]], [0.15#super[\*\*]],
+  [$alpha times beta$], [0.08], [0.10],
+  [$ln("population")$], [0.23#super[\*\*]], [0.25#super[\*\*]],
+)
+```
+
+### 三线表示例
+
+当启用 `threeLineTable` 时：
+
+```typst
+#table(
+  columns: (auto, 1fr, 1fr),
+  align: (left, center, center),
+  stroke: none,
+
+  table.hline(),
+  [], [(1)], [(2)],
+  table.hline(stroke: 0.5pt),
+
+  [Variable], [Coef], [SE],
+  [X1], [0.05#super[\*\*\*]], [0.01],
+
+  table.hline(),
+)
+```
+
+### 自定义引用模板示例
+
+您可以使用 `includeTemplate` 设置自定义表格引用的插入方式：
+
+**默认：**
+```json
+"typstTablePaste.includeTemplate": "#figure(include \"{path}\")"
+```
+
+**带标题：**
+```json
+"typstTablePaste.includeTemplate": "#figure(include \"{path}\", caption: [Table])"
+```
+
+**简单引用：**
+```json
+"typstTablePaste.includeTemplate": "#include \"{path}\""
+```
+
+**自定义包装器：**
+```json
+"typstTablePaste.includeTemplate": "#block(include \"{path}\")"
+```
+
 ## 🧩 支持的格式
 
 ### CSV 格式
@@ -111,7 +225,7 @@
 | `typstTablePaste.preserveAlignment` | `true` | 保留表格对齐方式 |
 | `typstTablePaste.threeLineTable` | `false` | 使用三线表格式（仅顶线、表头底线、底线） |
 | `typstTablePaste.autoMathMode` | `false` | 自动将变量名和 R² 转换为数学模式 |
-| `typstTablePaste.mathModeExclusions` | `["Constant", "Controls", "Observations", "R-squared", "Adjusted R-squared", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"]` | 排除数学模式转换的术语列表 |
+| `typstTablePaste.mathModeExclusions` | `["Constant", "Controls", "Observations", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"]` | 排除数学模式转换的术语列表 |
 | `typstTablePaste.addDividerAfterConstant` | `false` | 在 `Constant` 行后添加分割线 |
 | `typstTablePaste.tableFolder` | `"typ_tables"` | 保存表格文件的文件夹名称 |
 | `typstTablePaste.includeTemplate` | `"#figure(include \"{path}\")"` | 引用模板 |
@@ -135,6 +249,7 @@
 - **与其他粘贴扩展冲突**：建议使用 `Ctrl+Shift+V`，或改用自定义快捷键。
 - **R² 或变量未转为数学模式**：启用 `typstTablePaste.autoMathMode`，并确认不在 `mathModeExclusions` 中。
 - **修改输出文件夹**：配置 `typstTablePaste.tableFolder`。
+- **无法直接导入 RTF 文件**：RTF 文件只能从剪贴板处理（从 Word/Excel 复制）。"从文件转换"功能仅支持 CSV 文件。
 
 ## 🔒 隐私
 
