@@ -1,36 +1,46 @@
 # Typst Table Paste
 
+[![en](https://img.shields.io/badge/lang-English-red.svg)](README.md)
+[![cn](https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-yellow.svg)](README_zh.md)
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
+![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/i/leichaoL.typst-table-paste.svg)
+![GitHub all releases](https://img.shields.io/github/downloads/leichaoL/typst-table-paste/total.svg)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/leichaoL.typst-table-paste)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 [![License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
 
 English | [简体中文](README_zh.md)
 
-A VSCode extension that automatically converts RTF or CSV tables from clipboard to Typst table syntax.
+A VSCode extension that automatically converts RTF or CSV tables from the clipboard to Typst table syntax. Ideal for regression tables, academic papers, and quick table reuse in Typst.
 
-## Features
+## 🖼️ Demo
 
-- ✅ **Automatic Conversion**: Automatically detects and converts table formats when pasting
-- ✅ **Multiple Format Support**:
-  - RTF tables (copied from Word, Excel)
-  - CSV tables (standard comma-separated and equals-separated formats)
-  - Extract tables from entire document content
-- ✅ **Format Preservation**:
-  - Significance markers (`***`, `**`, `*`) converted to Typst superscript syntax
-  - Table border styles (top lines, bottom lines, etc.)
-  - Three-line table format for academic papers
-  - Alignment (left, center, right)
-  - Automatic column width settings
-- ✅ **Smart Formatting**:
-  - Small tables (≤ 5 columns): All cells in one row, with blank lines between rows
-  - Large tables (> 5 columns): Each cell on its own line, with two blank lines between rows
-  - Auto-convert variable names and R² to math mode (optional)
-- ✅ **File Management**:
-  - Tables saved to separate files in `typ_tables/` folder
-  - Automatic file naming (`table_001.typ`, `table_002.typ`, ...)
-  - Insert reference code at paste location
-  - Support for multiple tables in one paste operation
+![Paste from Excel to Typst](assets/demo-paste.gif)
 
-## Installation
+## 🚀 Quick Start
+
+### Create from Clipboard
+
+1. Copy a table from Excel, Word, or a CSV source.
+2. In a `.typ` file, press `Ctrl+Shift+V` (or `Cmd+Shift+V`).
+3. A table file is saved to `typ_tables/`, and a reference is inserted at the cursor.
+
+Note: Use `Ctrl+Shift+V` instead of `Ctrl+V` to avoid conflicts with other paste extensions (like typst-figure-pastetools).
+
+### Create from CSV File
+
+1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P`) to open the command palette.
+2. Type "Typst Table Paste: Convert From File".
+3. Select one or more CSV files to import.
+4. Tables are saved to `typ_tables/`; multiple CSV files are merged into one table, and a reference is inserted at the cursor.
+
+## ✨ Features
+
+- RTF/CSV table detection (including equals-separated CSV)
+- Preserve significance markers, borders, and alignment
+- Automatic layout for small vs. large tables
+- Save table files and insert references automatically
+
+## 📦 Installation
 
 ### From Source
 
@@ -42,53 +52,11 @@ A VSCode extension that automatically converts RTF or CSV tables from clipboard 
    ```
 3. Press `F5` in VSCode to start debugging mode
 
-### From Marketplace (Coming Soon)
+### From Marketplace
 
 Search for "Typst Table Paste" in the VSCode extension marketplace.
 
-## Usage
-
-### Keyboard Shortcut (Recommended)
-
-1. Copy a table from Excel, Word, or other applications
-2. In a Typst file (`.typ`), press `Ctrl+Shift+V` (or `Cmd+Shift+V`) to paste
-3. The extension will automatically detect and convert to Typst table syntax
-4. The table will be saved to the `typ_tables/` folder, and a reference will be inserted at the current location
-
-**Note**: Use `Ctrl+Shift+V` instead of `Ctrl+V` to avoid conflicts with other paste extensions (like typst-figure-pastetools).
-
-### Manual Conversion
-
-1. Copy a table to clipboard
-2. Press `Ctrl+Shift+P` (or `Cmd+Shift+P`) to open the command palette
-3. Type "Typst Table Paste: Convert Table"
-4. Press Enter to execute the conversion
-
-### Workflow
-
-1. **Copy Table** → From Excel/Word
-2. **Paste** → Press `Ctrl+Shift+V`
-3. **Automatic Processing**:
-   - Creates `typ_tables/` folder (if it doesn't exist)
-   - Generates a separate table file (e.g., `table_001.typ`)
-   - Inserts reference at current location: `#figure(include "typ_tables/table_001.typ")`
-4. **Edit** → You can edit the table file separately, keeping the main file clean
-
-## Configuration
-
-Search for "Typst Table Paste" in VSCode settings to find the following options:
-
-- `typstTablePaste.autoConvert`: Automatically convert tables when pasting (default: true)
-- `typstTablePaste.preserveSuperscript`: Preserve significance markers as superscript (default: true)
-- `typstTablePaste.preserveBorders`: Preserve table border styles (default: true)
-- `typstTablePaste.preserveAlignment`: Preserve table alignment (default: true)
-- `typstTablePaste.threeLineTable`: Use three-line table format (top, header bottom, bottom lines only) (default: false)
-- `typstTablePaste.autoMathMode`: Automatically convert variable names and R² to math mode ($variable$) (default: false)
-- `typstTablePaste.mathModeExclusions`: List of terms to exclude from math mode conversion (default: ["Constant", "Controls", "Observations", "R-squared", "Adjusted R-squared", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"])
-- `typstTablePaste.tableFolder`: Folder name for saving table files (default: "typ_tables")
-- `typstTablePaste.includeTemplate`: Template for table references (default: "#figure(include \"{path}\")")
-
-## Example
+## 🧪 Examples
 
 ### Input (CSV)
 
@@ -139,7 +107,7 @@ Large table (7 columns):
 )
 ```
 
-## Supported Formats
+## 🧩 Supported Formats
 
 ### CSV Format
 
@@ -152,7 +120,48 @@ Large table (7 columns):
 - Tables copied from Microsoft Excel
 - Tables copied from other applications that support RTF format
 
-## Development
+## 🛠️ Configuration
+
+Search for "Typst Table Paste" in VSCode settings.
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `typstTablePaste.autoConvert` | `true` | Automatically convert tables when pasting |
+| `typstTablePaste.preserveSuperscript` | `true` | Preserve significance markers as superscript |
+| `typstTablePaste.preserveBorders` | `true` | Preserve table border styles |
+| `typstTablePaste.preserveAlignment` | `true` | Preserve table alignment |
+| `typstTablePaste.threeLineTable` | `false` | Use three-line table format (top, header bottom, bottom lines only) |
+| `typstTablePaste.autoMathMode` | `false` | Automatically convert variable names and R² to math mode |
+| `typstTablePaste.mathModeExclusions` | `["Constant", "Controls", "Observations", "R-squared", "Adjusted R-squared", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"]` | Terms to exclude from math mode conversion |
+| `typstTablePaste.addDividerAfterConstant` | `false` | Add a divider after the `Constant` row |
+| `typstTablePaste.tableFolder` | `"typ_tables"` | Folder name for saving table files |
+| `typstTablePaste.includeTemplate` | `"#figure(include \"{path}\")"` | Template for table references |
+
+Example `settings.json`:
+
+```json
+{
+  "typstTablePaste.autoConvert": true,
+  "typstTablePaste.threeLineTable": false,
+  "typstTablePaste.addDividerAfterConstant": false,
+  "typstTablePaste.autoMathMode": false,
+  "typstTablePaste.tableFolder": "typ_tables",
+  "typstTablePaste.includeTemplate": "#figure(include \"{path}\")"
+}
+```
+
+## ❓ FAQ & Troubleshooting
+
+- **Nothing happens on paste**: Make sure the active file is `.typ`, and try `Ctrl+Shift+V`. Check for keybinding conflicts.
+- **Conflicts with other paste extensions**: Prefer `Ctrl+Shift+V`, or remap the shortcut to avoid collisions.
+- **R² or variables not in math mode**: Enable `typstTablePaste.autoMathMode` and ensure the term is not in `mathModeExclusions`.
+- **Change output folder**: Set `typstTablePaste.tableFolder` to a custom path.
+
+## 🔒 Privacy
+
+Clipboard data is processed locally in VSCode and is not sent over the network.
+
+## 🧰 Development
 
 ### Setup
 
@@ -179,12 +188,15 @@ npm install -g @vscode/vsce
 vsce package
 ```
 
-## Changelog
+## 🧭 Planned
+
+- Import Excel files directly
+- Copy tables directly from Stata console
+
+## 📝 Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
-
-## License
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
-

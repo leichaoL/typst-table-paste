@@ -1,95 +1,65 @@
 # Typst Table Paste
 
+[![en](https://img.shields.io/badge/lang-English-red.svg)](README.md)
+[![cn](https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-yellow.svg)](README_zh.md)
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/leichaoL.typst-table-paste)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 [![License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
 
 [English](README.md) | 简体中文
 
-一个 VSCode 扩展，可以自动将剪贴板中的 RTF 或 CSV 表格转换为 Typst 表格语法。
+一个 VSCode 扩展，可以自动将剪贴板中的 RTF 或 CSV 表格转换为 Typst 表格语法。适合回归表、学术论文和快速复用表格。
 
-## 功能特性
+## 🖼️ 演示
 
-- ✅ **自动转换**：粘贴时自动检测并转换表格格式
-- ✅ **多格式支持**：
-  - RTF 表格（从 Word、Excel 复制）
-  - CSV 表格（标准逗号分隔和等号分隔格式）
-  - 从整个文档内容中提取表格
-- ✅ **格式保留**：
-  - 显著性标记（`***`、`**`、`*`）转换为 Typst 上标语法
-  - 表格边框样式（顶线、底线等）
-  - 学术论文三线表格式
-  - 对齐方式（左对齐、居中、右对齐）
-  - 自动列宽设置
-- ✅ **智能格式化**：
-  - 小表格（≤ 5 列）：所有单元格在一行，行间有空行
-  - 大表格（> 5 列）：每个单元格单独一行，行间有两个空行
-  - 自动将变量名和 R² 转换为数学模式（可选）
-- ✅ **文件管理**：
-  - 表格保存到 `typ_tables/` 文件夹中的单独文件
-  - 自动文件命名（`table_001.typ`、`table_002.typ`...）
-  - 在粘贴位置插入引用代码
-  - 支持一次粘贴多个表格
+![Paste from RTF to Typst](assets/demo-paste.gif)
 
-## 安装
+## 🚀 快速开始
+
+### 从剪贴板创建表格
+
+1. 从 Excel、Word 或 CSV 源复制表格。
+2. 在 `.typ` 文件中按 `Ctrl+Shift+V`（或 `Cmd+Shift+V`）。
+3. 表格会保存到 `typ_tables/`，并在光标位置插入引用。
+4. 您可以单独编辑表格文件，保持主文件整洁。
+
+注意：使用 `Ctrl+Shift+V` 而不是 `Ctrl+V`，以避免与其他粘贴扩展（如 typst-figure-pastetools）冲突。
+
+### 从CSV文件中创建表格
+
+1. 按 `Ctrl+Shift+P`（或 `Cmd+Shift+P`）打开命令面板
+2. 输入 "Typst Table Paste: Convert From File"
+3. 选择 CSV 文件（可多选）进行导入
+4. 表格会保存到 `typ_tables/`，多个 CSV 文件会合并成一张表，并在光标位置插入引用。
+
+## ✨ 功能特性
+
+- RTF/CSV 表格识别（支持等号分隔 CSV）
+- 显著性标记、边框、对齐方式等格式保留
+- 小/大表格的自动排版策略
+- 表格文件自动保存与引用插入
+- 自动转换成三线表或者是自动隔开回归系数（可选）
+- 自动将变量名和 R² 转换为数学模式（可选）
+
+## 📦 安装
 
 ### 从源码安装
 
 1. 克隆或下载本项目
 2. 在项目目录中运行：
+
    ```bash
    npm install
    npm run compile
    ```
+
 3. 在 VSCode 中按 `F5` 启动调试模式
 
-### 从市场安装（即将推出）
+### 从市场安装
 
-在 VSCode 扩展市场中搜索 "Typst Table Paste"。
+在 VSCode 扩展市场中搜索 "[Typst Table Paste](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)"。
 
-## 使用方法
-
-### 键盘快捷键（推荐）
-
-1. 从 Excel、Word 或其他应用程序复制表格
-2. 在 Typst 文件（`.typ`）中，按 `Ctrl+Shift+V`（或 `Cmd+Shift+V`）粘贴
-3. 扩展将自动检测并转换为 Typst 表格语法
-4. 表格将保存到 `typ_tables/` 文件夹，并在当前位置插入引用
-
-**注意**：使用 `Ctrl+Shift+V` 而不是 `Ctrl+V`，以避免与其他粘贴扩展（如 typst-figure-pastetools）冲突。
-
-### 手动转换
-
-1. 将表格复制到剪贴板
-2. 按 `Ctrl+Shift+P`（或 `Cmd+Shift+P`）打开命令面板
-3. 输入 "Typst Table Paste: Convert Table"
-4. 按 Enter 执行转换
-
-### 工作流程
-
-1. **复制表格** → 从 Excel/Word
-2. **粘贴** → 按 `Ctrl+Shift+V`
-3. **自动处理**：
-   - 创建 `typ_tables/` 文件夹（如果不存在）
-   - 生成单独的表格文件（例如 `table_001.typ`）
-   - 在当前位置插入引用：`#figure(include "typ_tables/table_001.typ")`
-4. **编辑** → 您可以单独编辑表格文件，保持主文件整洁
-
-## 配置选项
-
-在 VSCode 设置中搜索 "Typst Table Paste" 可找到以下选项：
-
-- `typstTablePaste.autoConvert`：粘贴时自动转换表格（默认：true）
-- `typstTablePaste.preserveSuperscript`：保留显著性标记为上标（默认：true）
-- `typstTablePaste.preserveBorders`：保留表格边框样式（默认：true）
-- `typstTablePaste.preserveAlignment`：保留表格对齐方式（默认：true）
-- `typstTablePaste.threeLineTable`：使用三线表格式（仅顶线、表头底线、底线）（默认：false）
-- `typstTablePaste.autoMathMode`：自动将变量名和 R² 转换为数学模式（$variable$）（默认：false）
-- `typstTablePaste.mathModeExclusions`：从数学模式转换中排除的术语列表（默认：["Constant", "Controls", "Observations", "R-squared", "Adjusted R-squared", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"]）
-- `typstTablePaste.addDividerAfterConstant`：在 Constant 行后添加分割线，将回归系数与固定效应部分分开（默认：false）
-- `typstTablePaste.tableFolder`：保存表格文件的文件夹名称（默认："typ_tables"）
-- `typstTablePaste.includeTemplate`：表格引用模板（默认："#figure(include \"{path}\")"）
-
-## 示例
+## 🧪 示例
 
 ### 输入（CSV）
 
@@ -102,6 +72,7 @@
 ### 输出（Typst）
 
 小表格（3 列）：
+
 ```typst
 #table(
   columns: (auto, 1fr, 1fr),
@@ -115,32 +86,7 @@
 )
 ```
 
-大表格（7 列）：
-```typst
-#table(
-  columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
-  align: (left, center, center, center, center, center, center),
-
-  [],
-  [(1)],
-  [(2)],
-  [(3)],
-  [(4)],
-  [(5)],
-  [(6)],
-
-
-  [Variable],
-  [Coef1],
-  [Coef2],
-  [Coef3],
-  [Coef4],
-  [Coef5],
-  [Coef6],
-)
-```
-
-## 支持的格式
+## 🧩 支持的格式
 
 ### CSV 格式
 
@@ -153,7 +99,48 @@
 - 从 Microsoft Excel 复制的表格
 - 从其他支持 RTF 格式的应用程序复制的表格
 
-## 开发
+## 🛠️ 配置选项
+
+在 VSCode 设置中搜索 "Typst Table Paste" 可找到以下选项：
+
+| 选项 | 默认值 | 说明 |
+| --- | --- | --- |
+| `typstTablePaste.autoConvert` | `true` | 粘贴时自动转换表格 |
+| `typstTablePaste.preserveSuperscript` | `true` | 保留显著性标记为上标 |
+| `typstTablePaste.preserveBorders` | `true` | 保留表格边框样式 |
+| `typstTablePaste.preserveAlignment` | `true` | 保留表格对齐方式 |
+| `typstTablePaste.threeLineTable` | `false` | 使用三线表格式（仅顶线、表头底线、底线） |
+| `typstTablePaste.autoMathMode` | `false` | 自动将变量名和 R² 转换为数学模式 |
+| `typstTablePaste.mathModeExclusions` | `["Constant", "Controls", "Observations", "R-squared", "Adjusted R-squared", "N", "Fixed Effects", "Year FE", "Firm FE", "Industry FE", "Country FE"]` | 排除数学模式转换的术语列表 |
+| `typstTablePaste.addDividerAfterConstant` | `false` | 在 `Constant` 行后添加分割线 |
+| `typstTablePaste.tableFolder` | `"typ_tables"` | 保存表格文件的文件夹名称 |
+| `typstTablePaste.includeTemplate` | `"#figure(include \"{path}\")"` | 引用模板 |
+
+`settings.json` 示例：
+
+```json
+{
+  "typstTablePaste.autoConvert": true,
+  "typstTablePaste.threeLineTable": false,
+  "typstTablePaste.addDividerAfterConstant": false,
+  "typstTablePaste.autoMathMode": false,
+  "typstTablePaste.tableFolder": "typ_tables",
+  "typstTablePaste.includeTemplate": "#figure(include \"{path}\")"
+}
+```
+
+## ❓ 常见问题
+
+- **粘贴没有反应**：确认当前文件为 `.typ`，并使用 `Ctrl+Shift+V`，检查是否有快捷键冲突。
+- **与其他粘贴扩展冲突**：建议使用 `Ctrl+Shift+V`，或改用自定义快捷键。
+- **R² 或变量未转为数学模式**：启用 `typstTablePaste.autoMathMode`，并确认不在 `mathModeExclusions` 中。
+- **修改输出文件夹**：配置 `typstTablePaste.tableFolder`。
+
+## 🔒 隐私
+
+剪贴板内容仅在本地 VSCode 中处理，不会发送到网络。
+
+## 🧰 开发
 
 ### 设置
 
@@ -180,10 +167,17 @@ npm install -g @vscode/vsce
 vsce package
 ```
 
-## 更新日志
+## 🧭 已知问题与待实现功能
+
+- [ ] 变量名称中的下划线符号 `_` 未进行转义
+- [ ] 部分变量名称未能自动转成数学模式
+- [ ] 直接导入 Excel
+- [ ] 直接从 Stata console 中复制表格
+
+## 📝 更新日志
 
 查看 [CHANGELOG.md](CHANGELOG.md) 了解版本历史。
 
-## 许可证
+## 📄 许可证
 
 MIT License - 详见 [LICENSE](LICENSE)。
