@@ -214,6 +214,12 @@ You can customize how table references are inserted using the `includeTemplate` 
 - Tables copied from Microsoft Excel
 - Tables copied from other applications that support RTF format
 
+### Stata Console Format (Experimental)
+
+- Tables copied directly from Stata console output
+- Basic table structure detection and conversion
+- **Note**: This is an experimental feature. For complex tables, it's recommended to export the table to CSV or Excel first for better results.
+
 ## 🛠️ Configuration
 
 Search for "Typst Table Paste" in VSCode settings.
@@ -283,9 +289,9 @@ npm install -g @vscode/vsce
 vsce package
 ```
 
-## 🧭 Planned
+## 🧭 Known Limitations
 
-- Copy tables directly from Stata console
+- **Stata console tables**: Experimental support available. Simple tables work well, but complex tables may not convert perfectly. For best results, export tables to CSV/Excel format first.
 
 
 ## 📝 Changelog

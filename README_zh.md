@@ -220,6 +220,12 @@ ln(population),0.23**,0.25**
 - 从 Microsoft Excel 复制的表格
 - 从其他支持 RTF 格式的应用程序复制的表格
 
+### Stata Console 格式（实验性功能）
+
+- 直接从 Stata console 输出中复制的表格
+- 基本表格结构检测和转换
+- **注意**：这是一个实验性功能。对于复杂的表格，建议先将表格导出为 CSV 或 Excel 格式以获得更好的效果。
+
 ## 🛠️ 配置选项
 
 在 VSCode 设置中搜索 "Typst Table Paste" 可找到以下选项：
@@ -289,9 +295,9 @@ npm install -g @vscode/vsce
 vsce package
 ```
 
-## 🧭 已知问题与待实现功能
+## 🧭 已知限制
 
-- [ ] 直接从 Stata console 中复制表格
+- **Stata console 表格**：已提供实验性支持。简单表格可以很好地转换，但复杂表格可能无法完美转换。为获得最佳效果，建议先将表格导出为 CSV/Excel 格式。
 
 ## 📝 更新日志
 

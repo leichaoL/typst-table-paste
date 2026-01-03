@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { detectFormat, isTableFormat, extractTables } from './parsers/formatDetector';
 import { parseCSV } from './parsers/csvParser';
 import { parseRTF } from './parsers/rtfParser';
+import { parseStataTable } from './parsers/stataParser';
 import { parseExcel, getExcelSheetNames, isExcelFile } from './parsers/excelParser';
 import { quickConvert } from './converters/typstConverter';
 import { Paste2TypConfig } from './utils/types';
@@ -735,7 +736,7 @@ async function convertFromFileCommand() {
  */
 async function convertClipboardToTypst(
   content: string,
-  format: 'rtf' | 'csv',
+  format: 'rtf' | 'csv' | 'stata',
   config: Paste2TypConfig
 ): Promise<string | null> {
   try {
@@ -747,6 +748,9 @@ async function convertClipboardToTypst(
     } else if (format === 'rtf') {
       // 解析 RTF
       table = await parseRTF(content);
+    } else if (format === 'stata') {
+      // 解析 Stata 表格
+      table = parseStataTable(content);
     } else {
       return null;
     }

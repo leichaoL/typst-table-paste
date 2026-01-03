@@ -2,6 +2,22 @@
 
 All notable changes to the "Typst Table Paste" extension will be documented in this file.
 
+## [0.5.0] - 2026-01-03
+
+### Added
+
+- **Stata console table support (Experimental)**: Copy tables directly from Stata console output and convert to Typst format
+  - Basic table structure detection for Stata output
+  - Automatic parsing of console text format
+  - **Limitation**: This is an experimental feature. Simple tables work well, but complex tables may not convert perfectly. For best results, export tables to CSV/Excel format first.
+
+### 新增
+
+- **Stata console 表格支持（实验性）**：直接从 Stata console 输出复制表格并转换为 Typst 格式
+  - 基本的 Stata 输出表格结构检测
+  - 自动解析 console 文本格式
+  - **限制**：这是一个实验性功能。简单表格可以很好地转换，但复杂表格可能无法完美转换。为获得最佳效果，建议先将表格导出为 CSV/Excel 格式。
+
 ## [0.4.0] - 2025-12-24
 
 ### Added

@@ -39,7 +39,7 @@ export interface ParsedTable {
 /**
  * 格式类型
  */
-export type FormatType = 'rtf' | 'csv' | 'unknown';
+export type FormatType = 'rtf' | 'csv' | 'stata' | 'unknown';
 
 /**
  * CSV 格式类型

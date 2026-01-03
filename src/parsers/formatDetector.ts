@@ -1,6 +1,7 @@
 import { FormatType } from '../utils/types';
 import { isRTF } from './rtfParser';
 import { isCSV } from './csvParser';
+import { isStataTable } from './stataParser';
 
 /**
  * 检测内容格式
@@ -20,7 +21,12 @@ export function detectFormat(content: string): FormatType {
     return 'rtf';
   }
 
-  // 再检测 CSV
+  // 再检测 Stata（Stata 表格有特定的分隔线模式）
+  if (isStataTable(normalized)) {
+    return 'stata';
+  }
+
+  // 最后检测 CSV
   if (isCSV(normalized)) {
     return 'csv';
   }
@@ -29,13 +35,13 @@ export function detectFormat(content: string): FormatType {
 }
 
 /**
- * 检测内容是否为表格格式（RTF 或 CSV）
+ * 检测内容是否为表格格式（RTF、CSV 或 Stata）
  * @param content 内容
  * @returns 是否为表格格式
  */
 export function isTableFormat(content: string): boolean {
   const format = detectFormat(content);
-  return format === 'rtf' || format === 'csv';
+  return format === 'rtf' || format === 'csv' || format === 'stata';
 }
 
 /**
