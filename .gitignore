@@ -29,6 +29,7 @@ Thumbs.db
 
 # Claude configuration
 .claude/
+CLAUDE.md
 
 # Log files
 *.log

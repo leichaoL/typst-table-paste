@@ -1,6 +1,7 @@
 # Source code (only package compiled files)
 src/**
 tsconfig.json
+webpack.config.js
 
 # Test data
 tables/**
@@ -19,9 +20,17 @@ TODO.md
 # Temporary and build files
 *.log
 *.map
+out/**
 
 # Old package files
 *.vsix
 
-# Keep only necessary files for runtime
-!out/**
+# Node modules (bundled by webpack)
+node_modules/**
+
+# Dist folder (exclude everything first)
+dist/**
+
+# Keep only the bundled extension (no source maps)
+!dist/extension.js
+!dist/extension.js.LICENSE.txt
