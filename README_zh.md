@@ -4,7 +4,6 @@
 [![cn](https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-yellow.svg)](README_zh.md)
 [![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 ![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/i/leichaoL.typst-table-paste.svg)
-![GitHub all releases](https://img.shields.io/github/downloads/leichaoL/typst-table-paste/total.svg)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/leichaoL.typst-table-paste)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 [![License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
 
@@ -27,23 +26,33 @@
 
 注意：使用 `Ctrl+Shift+V` 而不是 `Ctrl+V`，以避免与其他粘贴扩展（如 typst-figure-pastetools）冲突。
 
-### 从CSV文件中创建表格
+### 从CSV/Excel文件中创建表格
 
 1. 按 `Ctrl+Shift+P`（或 `Cmd+Shift+P`）打开命令面板
 2. 输入 "Typst Table Paste: Convert From File"
 3. 选择 CSV 或 Excel 文件（可多选）进行导入
 4. 对于包含多个工作表的 Excel 文件，选择要转换的工作表
-5. 表格会保存到 `typ_tables/`，多个文件会合并成一张表，并在光标位置插入引用。
+5. 表格保存到 `typ_tables/`，文件名使用源文件名（例如：`data.csv` → `data.typ`）
+
+### 重命名表格文件
+
+重命名表格文件并自动更新所有引用：
+
+- **在编辑器中**：在 include 语句行按 `Shift+F2` 或右键 → "Rename Table File"
+- **在文件浏览器中**：右键点击 `typ_tables/` 中的 `.typ` 文件 → "Rename Typst Table"
+
+所有引用会在工作区中自动更新。
 
 ## ✨ 功能特性
 
 ### 核心功能
 
-- RTF/CSV 表格识别（支持等号分隔 CSV）
+- RTF/CSV/Excel 表格识别和转换
 - 显著性标记、边框、对齐方式等格式保留
 - 小/大表格的自动排版策略（≤5 列：紧凑格式，>5 列：展开格式）
-- 表格文件自动保存与引用插入
-- 顺序文件命名（`table_001.typ`、`table_002.typ` 等）
+- 智能文件命名使用源文件名（例如：`data.csv` → `data.typ`）
+- 重命名表格并自动更新引用（Shift+F2）
+- 重复文件名自动编号（例如：`data.typ`、`data_1.typ`、`data_2.typ`）
 
 ### 学术论文支持
 

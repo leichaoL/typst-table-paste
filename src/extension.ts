@@ -13,6 +13,13 @@ import {
   generateTableFileName,
   saveTableFile,
   generateIncludeStatement,
+  promptForFileName,
+  suggestFileNameFromSource,
+  findTableReferences,
+  updateTableReferences,
+  renameTableFile,
+  validateTableFileName,
+  fileNameExists,
 } from './utils/fileManager';
 
 /**
@@ -48,7 +55,29 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(convertCommand, convertFromFileCmd, pasteHandler);
+  // 注册从 include 语句重命名命令
+  const renameFromIncludeCmd = vscode.commands.registerTextEditorCommand(
+    'typst-table-paste.renameTableFromInclude',
+    async (textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit) => {
+      await renameTableFromInclude(textEditor, edit);
+    }
+  );
+
+  // 注册从文件浏览器重命名命令
+  const renameFromExplorerCmd = vscode.commands.registerCommand(
+    'typst-table-paste.renameTableFromExplorer',
+    async (uri: vscode.Uri) => {
+      await renameTableFromExplorer(uri);
+    }
+  );
+
+  context.subscriptions.push(
+    convertCommand,
+    convertFromFileCmd,
+    pasteHandler,
+    renameFromIncludeCmd,
+    renameFromExplorerCmd
+  );
 
   // 覆盖默认粘贴行为（如果启用自动转换）
   setupPasteInterceptor(context);
@@ -292,8 +321,21 @@ async function handleFileCopy(
       try {
         // Check if it's an Excel file
         if (isExcelFile(filePath)) {
-          // Get sheet names
-          const sheetNames = getExcelSheetNames(filePath);
+          // Verify file exists and is accessible
+          if (!fs.existsSync(filePath)) {
+            errors.push(`${path.basename(filePath)}: 文件不存在`);
+            continue;
+          }
+
+          // Try to get sheet names (this will test if file is accessible)
+          let sheetNames: string[];
+          try {
+            sheetNames = getExcelSheetNames(filePath);
+          } catch (error: any) {
+            // excelParser 已提供友好的错误消息
+            errors.push(`${path.basename(filePath)}: ${error.message}`);
+            continue;
+          }
 
           if (sheetNames.length === 0) {
             errors.push(`${path.basename(filePath)}: No sheets found`);
@@ -370,12 +412,16 @@ async function handleFileCopy(
     // Show errors if any
     if (errors.length > 0) {
       vscode.window.showWarningMessage(
-        `Some files could not be processed:\n${errors.join('\n')}`
+        `部分文件无法处理:\n${errors.join('\n')}`
       );
     }
 
     if (tables.length === 0) {
-      vscode.window.showWarningMessage('No valid table files found');
+      if (errors.length > 0) {
+        vscode.window.showErrorMessage('没有可以转换的有效表格文件。请检查上述错误信息。');
+      } else {
+        vscode.window.showWarningMessage('未找到有效的表格文件');
+      }
       return;
     }
 
@@ -417,8 +463,15 @@ async function processSingleFileTable(
   }
 
   if (typstCode) {
+    // 从源文件路径生成建议的文件名
+    const suggestedName = suggestFileNameFromSource(
+      tableData.filePath,
+      tableData.filename
+    );
+    console.log('[Paste2Typ] 建议的文件名:', suggestedName, '来源:', tableData.filePath);
+
     // Save and insert using existing logic
-    await saveAndInsertTable(typstCode, textEditor, config);
+    await saveAndInsertTable(typstCode, textEditor, config, suggestedName);
   }
 }
 
@@ -551,7 +604,8 @@ function addPanelTitle(typstCode: string, filename: string, isFirstPanel: boolea
 async function saveAndInsertTable(
   typstCode: string,
   textEditor: vscode.TextEditor,
-  config: Paste2TypConfig
+  config: Paste2TypConfig,
+  suggestedFileName?: string
 ): Promise<void> {
   // 获取当前文件目录
   const currentFileUri = textEditor.document.uri;
@@ -562,9 +616,56 @@ async function saveAndInsertTable(
   const tablesFolder = await ensureTypTablesFolder(currentFileDir);
   console.log('表格文件夹:', tablesFolder);
 
-  // 生成文件名
-  const fileName = await generateTableFileName(tablesFolder);
-  console.log('生成的文件名:', fileName);
+  // 只有当配置启用时才提示用户输入文件名
+  const promptForName = config.promptForTableName === true;
+
+  let fileName: string;
+
+  if (promptForName) {
+    // 确定建议的文件名
+    const suggested = suggestedFileName || await generateTableFileName(tablesFolder);
+
+    // 提示用户输入文件名
+    const userFileName = await promptForFileName(tablesFolder, suggested, 'create');
+
+    if (!userFileName) {
+      // 用户取消操作
+      vscode.window.showInformationMessage('已取消表格创建');
+      return;
+    }
+
+    fileName = userFileName;
+  } else {
+    // 不提示：优先使用建议的文件名，否则使用序号命名
+    if (suggestedFileName) {
+      // 验证建议的文件名
+      const validation = validateTableFileName(suggestedFileName);
+      if (!validation.valid) {
+        // 如果建议的文件名无效，使用序号命名
+        fileName = await generateTableFileName(tablesFolder);
+      } else {
+        // 检查文件是否已存在
+        if (fileNameExists(tablesFolder, suggestedFileName)) {
+          // 文件名已存在，生成新的文件名（在建议名称基础上添加序号）
+          const baseName = suggestedFileName.replace('.typ', '');
+          let counter = 1;
+          let newFileName = `${baseName}_${counter}.typ`;
+          while (fileNameExists(tablesFolder, newFileName)) {
+            counter++;
+            newFileName = `${baseName}_${counter}.typ`;
+          }
+          fileName = newFileName;
+        } else {
+          fileName = suggestedFileName;
+        }
+      }
+    } else {
+      // 没有建议的文件名，使用序号命名
+      fileName = await generateTableFileName(tablesFolder);
+    }
+  }
+
+  console.log('使用的文件名:', fileName);
 
   // 保存表格文件
   await saveTableFile(tablesFolder, fileName, typstCode);
@@ -765,6 +866,228 @@ async function convertClipboardToTypst(
 }
 
 /**
+ * 从编辑器中的 include 语句重命名表格文件
+ * @param textEditor 文本编辑器
+ * @param edit 编辑构建器
+ */
+async function renameTableFromInclude(
+  textEditor: vscode.TextEditor,
+  edit: vscode.TextEditorEdit
+): Promise<void> {
+  try {
+    // 获取光标所在行的文本
+    const line = textEditor.document.lineAt(textEditor.selection.active.line);
+    const lineText = line.text;
+
+    // 使用正则提取 include 路径
+    const includeRegex = /include\s+"([^"]+)"/;
+    const match = lineText.match(includeRegex);
+
+    if (!match) {
+      vscode.window.showErrorMessage('未找到表格引用。请将光标放在 include 语句所在行');
+      return;
+    }
+
+    const includePath = match[1];
+
+    // 解析路径，分离文件夹名和文件名
+    // 支持 / 和 \ 两种路径分隔符
+    const normalizedPath = includePath.replace(/\\/g, '/');
+    const pathParts = normalizedPath.split('/');
+
+    if (pathParts.length < 2) {
+      vscode.window.showErrorMessage('无法解析表格路径');
+      return;
+    }
+
+    const folderName = pathParts.slice(0, -1).join('/');
+    const oldFileName = pathParts[pathParts.length - 1];
+
+    // 构建完整的文件夹路径
+    const currentFileDir = path.dirname(textEditor.document.uri.fsPath);
+    const tablesFolder = path.join(currentFileDir, folderName);
+
+    // 验证文件存在
+    const oldFilePath = path.join(tablesFolder, oldFileName);
+    if (!fs.existsSync(oldFilePath)) {
+      vscode.window.showErrorMessage(`文件不存在: ${oldFileName}`);
+      return;
+    }
+
+    // 提示用户输入新文件名
+    const newFileName = await promptForFileName(tablesFolder, oldFileName, 'rename');
+
+    if (!newFileName) {
+      // 用户取消
+      return;
+    }
+
+    // 如果文件名没有改变，直接返回
+    if (newFileName === oldFileName) {
+      vscode.window.showInformationMessage('文件名未更改');
+      return;
+    }
+
+    // 显示进度通知
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: '正在重命名表格并更新引用...',
+      cancellable: false
+    }, async (progress) => {
+      // 重命名文件
+      progress.report({ message: '重命名文件...' });
+      await renameTableFile(tablesFolder, oldFileName, newFileName);
+
+      // 查找所有引用
+      progress.report({ message: '搜索引用...' });
+      const workspaceFolder = vscode.workspace.getWorkspaceFolder(textEditor.document.uri);
+      if (!workspaceFolder) {
+        throw new Error('未找到工作区');
+      }
+
+      const references = await findTableReferences(
+        workspaceFolder.uri.fsPath,
+        folderName,
+        oldFileName
+      );
+
+      // 更新引用
+      progress.report({ message: '更新引用...' });
+      const result = await updateTableReferences(
+        references,
+        folderName,
+        oldFileName,
+        newFileName
+      );
+
+      // 显示结果
+      if (result.failed > 0) {
+        vscode.window.showWarningMessage(
+          `已将 ${oldFileName} 重命名为 ${newFileName}。更新了 ${result.updated} 个引用，${result.failed} 个失败`
+        );
+      } else {
+        vscode.window.showInformationMessage(
+          `已将 ${oldFileName} 重命名为 ${newFileName}，更新了 ${result.updated} 个引用`
+        );
+      }
+    });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    vscode.window.showErrorMessage(`重命名失败: ${errorMessage}`);
+    console.error('重命名错误:', error);
+  }
+}
+
+/**
+ * 从文件浏览器重命名表格文件
+ * @param uri 文件 URI
+ */
+async function renameTableFromExplorer(uri: vscode.Uri): Promise<void> {
+  try {
+    // 获取文件路径
+    const filePath = uri.fsPath;
+
+    // 验证是 .typ 文件
+    if (!filePath.endsWith('.typ')) {
+      vscode.window.showErrorMessage('只能重命名 .typ 文件');
+      return;
+    }
+
+    // 获取配置的表格文件夹名称
+    const configTableFolder = vscode.workspace
+      .getConfiguration('typstTablePaste')
+      .get<string>('tableFolder', 'typ_tables');
+
+    // 验证文件在 typ_tables 文件夹中
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    if (!normalizedPath.includes(`/${configTableFolder}/`)) {
+      vscode.window.showErrorMessage(
+        `只能重命名 ${configTableFolder} 文件夹中的 .typ 文件`
+      );
+      return;
+    }
+
+    // 获取当前文件名和文件夹路径
+    const oldFileName = path.basename(filePath);
+    const tablesFolder = path.dirname(filePath);
+
+    // 从文件路径中提取表格文件夹名称
+    const pathParts = normalizedPath.split('/');
+    const tableFolderIndex = pathParts.findIndex(part => part === configTableFolder);
+    if (tableFolderIndex === -1) {
+      vscode.window.showErrorMessage('无法确定表格文件夹位置');
+      return;
+    }
+
+    const folderName = configTableFolder;
+
+    // 提示用户输入新文件名
+    const newFileName = await promptForFileName(tablesFolder, oldFileName, 'rename');
+
+    if (!newFileName) {
+      // 用户取消
+      return;
+    }
+
+    // 如果文件名没有改变，直接返回
+    if (newFileName === oldFileName) {
+      vscode.window.showInformationMessage('文件名未更改');
+      return;
+    }
+
+    // 显示进度通知
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: '正在重命名表格并更新引用...',
+      cancellable: false
+    }, async (progress) => {
+      // 重命名文件
+      progress.report({ message: '重命名文件...' });
+      await renameTableFile(tablesFolder, oldFileName, newFileName);
+
+      // 查找所有引用
+      progress.report({ message: '搜索引用...' });
+      const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+      if (!workspaceFolder) {
+        throw new Error('未找到工作区');
+      }
+
+      const references = await findTableReferences(
+        workspaceFolder.uri.fsPath,
+        folderName,
+        oldFileName
+      );
+
+      // 更新引用
+      progress.report({ message: '更新引用...' });
+      const result = await updateTableReferences(
+        references,
+        folderName,
+        oldFileName,
+        newFileName
+      );
+
+      // 显示结果
+      if (result.failed > 0) {
+        vscode.window.showWarningMessage(
+          `已将 ${oldFileName} 重命名为 ${newFileName}。更新了 ${result.updated} 个引用，${result.failed} 个失败`
+        );
+      } else {
+        vscode.window.showInformationMessage(
+          `已将 ${oldFileName} 重命名为 ${newFileName}，更新了 ${result.updated} 个引用`
+        );
+      }
+    });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    vscode.window.showErrorMessage(`重命名失败: ${errorMessage}`);
+    console.error('重命名错误:', error);
+  }
+}
+
+/**
  * 获取插件配置
  * @returns 配置对象
  */
@@ -783,6 +1106,7 @@ function getConfig(): Paste2TypConfig {
       'Fixed Effects', 'Year FE', 'Firm FE', 'Industry FE', 'Country FE'
     ]),
     addDividerAfterConstant: config.get<boolean>('addDividerAfterConstant', false),
+    promptForTableName: config.get<boolean>('promptForTableName', false),
   };
 }
 

@@ -66,4 +66,6 @@ export interface Paste2TypConfig {
   mathModeExclusions?: string[];
   /** 是否在 Constant 行后添加分割线 */
   addDividerAfterConstant?: boolean;
+  /** 是否在粘贴时提示输入文件名 */
+  promptForTableName?: boolean;
 }

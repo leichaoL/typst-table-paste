@@ -4,7 +4,6 @@
 [![cn](https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-yellow.svg)](README_zh.md)
 [![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 ![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/i/leichaoL.typst-table-paste.svg)
-![GitHub all releases](https://img.shields.io/github/downloads/leichaoL/typst-table-paste/total.svg)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/leichaoL.typst-table-paste)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
 [![License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
 
@@ -27,23 +26,33 @@ A VSCode extension that automatically converts RTF or CSV tables from the clipbo
 
 Note: Use `Ctrl+Shift+V` instead of `Ctrl+V` to avoid conflicts with other paste extensions (like typst-figure-pastetools).
 
-### Create from CSV File
+### Create from CSV/Excel File
 
 1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P`) to open the command palette.
 2. Type "Typst Table Paste: Convert From File".
 3. Select one or more CSV or Excel files to import.
 4. For Excel files with multiple sheets, choose which sheet(s) to convert.
-5. Tables are saved to `typ_tables/`; multiple files are merged into one table, and a reference is inserted at the cursor.
+5. Tables are saved to `typ_tables/` using source filenames (e.g., `data.csv` → `data.typ`).
+
+### Rename Table Files
+
+Rename table files with automatic reference updates:
+
+- **In editor**: Press `Shift+F2` on include statement line or right-click → "Rename Table File"
+- **In explorer**: Right-click `.typ` file in `typ_tables/` → "Rename Typst Table"
+
+All references are automatically updated across workspace.
 
 ## ✨ Features
 
 ### Core Features
 
-- RTF/CSV table detection (including equals-separated CSV)
+- RTF/CSV/Excel table detection and conversion
 - Preserve significance markers, borders, and alignment
 - Automatic layout for small vs. large tables (≤5 columns: compact, >5 columns: expanded)
-- Save table files and insert references automatically
-- Sequential file naming (`table_001.typ`, `table_002.typ`, etc.)
+- Smart file naming from source filenames (e.g., `data.csv` → `data.typ`)
+- Rename tables with automatic reference updates (Shift+F2)
+- Auto-number duplicate filenames (e.g., `data.typ`, `data_1.typ`, `data_2.typ`)
 
 ### Academic Paper Support
 - Three-line table format and automatic divider insertion (optional)

@@ -2,6 +2,34 @@
 
 All notable changes to the "Typst Table Paste" extension will be documented in this file.
 
+## [0.6.0] - 2026-01-11
+
+### Added
+
+- **Table file renaming**: Rename table files with automatic reference updates across workspace
+  - Press `Shift+F2` on include statement or right-click to rename
+  - Right-click `.typ` files in explorer for quick rename
+- **Smart file naming**: Use source filenames instead of sequential numbers (e.g., `data.csv` → `data.typ`)
+- **New setting**: `promptForTableName` - optionally prompt for custom filename when importing
+
+
+### Fixed
+
+- Fix Excel file import failure
+
+### 新增
+
+- **表格文件重命名**：重命名表格文件并自动更新所有引用
+  - 在 include 语句行按 `Shift+F2` 或右键重命名
+  - 右键点击文件浏览器中的 `.typ` 文件快速重命名
+- **智能文件命名**：导入文件时使用源文件名而非顺序编号（例如：`data.csv` → `data.typ`）
+- **新增设置**：`promptForTableName` - 可选择在导入时提示输入自定义文件名
+
+
+### 修复
+
+- 修复 Excel 文件导入失败的问题
+
 ## [0.5.0] - 2026-01-03
 
 ### Added

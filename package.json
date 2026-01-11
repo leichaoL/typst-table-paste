@@ -2,7 +2,7 @@
   "name": "typst-table-paste",
   "displayName": "Typst Table Paste",
   "description": "Paste and convert RTF/CSV tables to Typst table syntax",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "leichaoL",
   "author": "leichaoL",
   "license": "MIT",
@@ -50,6 +50,14 @@
       {
         "command": "typst-table-paste.convertFromFile",
         "title": "Typst Table Paste: Convert from File"
+      },
+      {
+        "command": "typst-table-paste.renameTableFromInclude",
+        "title": "Rename Table File"
+      },
+      {
+        "command": "typst-table-paste.renameTableFromExplorer",
+        "title": "Rename Typst Table"
       }
     ],
     "keybindings": [
@@ -58,8 +66,29 @@
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v",
         "when": "editorTextFocus && editorLangId == typst"
+      },
+      {
+        "command": "typst-table-paste.renameTableFromInclude",
+        "key": "shift+f2",
+        "when": "editorTextFocus && editorLangId == typst"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "typst-table-paste.renameTableFromInclude",
+          "when": "editorTextFocus && editorLangId == typst",
+          "group": "1_modification"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "typst-table-paste.renameTableFromExplorer",
+          "when": "resourceExtname == .typ && resourcePath =~ /typ_tables/",
+          "group": "7_modification"
+        }
+      ]
+    },
     "configuration": {
       "title": "Typst Table Paste",
       "properties": {
@@ -124,6 +153,11 @@
           "type": "string",
           "default": "#figure(include \"{path}\")",
           "description": "Template for table references, {path} will be replaced with the table file path"
+        },
+        "typstTablePaste.promptForTableName": {
+          "type": "boolean",
+          "default": false,
+          "description": "Prompt for table filename when pasting from clipboard or importing from file"
         }
       }
     }
