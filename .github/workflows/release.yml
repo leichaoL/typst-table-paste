@@ -1,0 +1,95 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # 需要获取前一次提交以比较
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Check version change
+        id: version_check
+        run: |
+          # 检查 package.json 是否被修改
+          if git diff HEAD^ HEAD --name-only | grep -q "package.json"; then
+            echo "package.json was modified"
+
+            # 提取版本号
+            OLD_VERSION=$(git show HEAD^:package.json | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+            NEW_VERSION=$(cat package.json | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+
+            echo "Old version: $OLD_VERSION"
+            echo "New version: $NEW_VERSION"
+
+            # 检查版本号是否真的变化了
+            if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+              echo "Version changed from $OLD_VERSION to $NEW_VERSION"
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            else
+              echo "Version not changed"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "package.json was not modified in this push"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract CHANGELOG
+        if: steps.version_check.outputs.changed == 'true'
+        id: changelog
+        run: |
+          VERSION=${{ steps.version_check.outputs.version }}
+
+          # 运行提取脚本
+          CHANGELOG_CONTENT=$(node .github/scripts/extract-changelog.js "$VERSION")
+
+          # 保存到文件（多行文本）
+          echo "$CHANGELOG_CONTENT" > /tmp/release-notes.md
+
+          # 显示提取的内容（调试用）
+          echo "=== Extracted CHANGELOG ==="
+          cat /tmp/release-notes.md
+          echo "==========================="
+
+      - name: Install dependencies
+        if: steps.version_check.outputs.changed == 'true'
+        run: npm ci
+
+      - name: Package extension
+        if: steps.version_check.outputs.changed == 'true'
+        run: |
+          npm install -g @vscode/vsce
+          vsce package
+
+          # 列出生成的 .vsix 文件
+          ls -lh *.vsix
+
+      - name: Create Release
+        if: steps.version_check.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version_check.outputs.version }}
+          name: v${{ steps.version_check.outputs.version }}
+          body_path: /tmp/release-notes.md
+          draft: false
+          prerelease: false
+          files: |
+            *.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
