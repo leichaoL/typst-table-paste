@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { detectFormat, isTableFormat, extractTables } from './parsers/formatDetector';
 import { parseCSV } from './parsers/csvParser';
-import { parseRTF } from './parsers/rtfParser';
+import { parseRTF, isRTFFile } from './parsers/rtfParser';
 import { parseStataTable } from './parsers/stataParser';
 import { parseExcel, getExcelSheetNames, isExcelFile } from './parsers/excelParser';
 import { quickConvert } from './converters/typstConverter';
@@ -313,7 +313,7 @@ async function handleFileCopy(
   config: Paste2TypConfig
 ): Promise<void> {
   try {
-    const tables: Array<{content: string, format: 'csv' | 'excel', filename: string, filePath?: string, sheetName?: string}> = [];
+    const tables: Array<{content: string, format: 'csv' | 'excel' | 'rtf', filename: string, filePath?: string, sheetName?: string}> = [];
     const errors: string[] = [];
 
     // Read each file
@@ -384,7 +384,7 @@ async function handleFileCopy(
             sheetName: selectedSheet
           });
         } else {
-          // CSV file
+          // CSV or RTF file
           const content = fs.readFileSync(filePath, 'utf-8');
           const format = detectFormat(content);
 
@@ -394,15 +394,24 @@ async function handleFileCopy(
           }
 
           if (format === 'rtf') {
-            errors.push(`${path.basename(filePath)}: RTF files are not supported. Please copy the table from Word and paste directly.`);
-            continue;
+            // RTF file - process it
+            tables.push({
+              content,
+              format: 'rtf',
+              filename: path.basename(filePath, path.extname(filePath)),
+              filePath
+            });
+          } else if (format === 'csv') {
+            // CSV file
+            tables.push({
+              content,
+              format: 'csv',
+              filename: path.basename(filePath, path.extname(filePath)),
+              filePath
+            });
+          } else {
+            errors.push(`${path.basename(filePath)}: Unsupported format (${format})`);
           }
-
-          tables.push({
-            content,
-            format: 'csv',
-            filename: path.basename(filePath, path.extname(filePath))
-          });
         }
       } catch (error: any) {
         errors.push(`${path.basename(filePath)}: ${error.message}`);
@@ -441,13 +450,13 @@ async function handleFileCopy(
 
 /**
  * 处理单个文件表格
- * 支持 CSV 和 Excel 文件
+ * 支持 CSV、Excel 和 RTF 文件
  * @param tableData 表格数据
  * @param textEditor 文本编辑器
  * @param config 配置
  */
 async function processSingleFileTable(
-  tableData: {content: string, format: 'csv' | 'excel', filename: string, filePath?: string, sheetName?: string},
+  tableData: {content: string, format: 'csv' | 'excel' | 'rtf', filename: string, filePath?: string, sheetName?: string},
   textEditor: vscode.TextEditor,
   config: Paste2TypConfig
 ): Promise<void> {
@@ -456,6 +465,10 @@ async function processSingleFileTable(
   if (tableData.format === 'excel' && tableData.filePath) {
     // Parse Excel file
     const parsedTable = parseExcel(tableData.filePath, tableData.sheetName);
+    typstCode = quickConvert(parsedTable, config);
+  } else if (tableData.format === 'rtf') {
+    // Parse RTF content
+    const parsedTable = await parseRTF(tableData.content);
     typstCode = quickConvert(parsedTable, config);
   } else if (tableData.format === 'csv') {
     // Convert CSV table using existing logic
@@ -477,13 +490,13 @@ async function processSingleFileTable(
 
 /**
  * 处理多个文件表格（带Panel标题）
- * 支持 CSV 和 Excel 文件
+ * 支持 CSV、Excel 和 RTF 文件
  * @param tables 表格数据数组
  * @param textEditor 文本编辑器
  * @param config 配置
  */
 async function processMultipleFileTables(
-  tables: Array<{content: string, format: 'csv' | 'excel', filename: string, filePath?: string, sheetName?: string}>,
+  tables: Array<{content: string, format: 'csv' | 'excel' | 'rtf', filename: string, filePath?: string, sheetName?: string}>,
   textEditor: vscode.TextEditor,
   config: Paste2TypConfig
 ): Promise<void> {
@@ -496,6 +509,10 @@ async function processMultipleFileTables(
     if (tableData.format === 'excel' && tableData.filePath) {
       // Parse Excel file
       const parsedTable = parseExcel(tableData.filePath, tableData.sheetName);
+      typstCode = quickConvert(parsedTable, config);
+    } else if (tableData.format === 'rtf') {
+      // Parse RTF content
+      const parsedTable = await parseRTF(tableData.content);
       typstCode = quickConvert(parsedTable, config);
     } else if (tableData.format === 'csv') {
       // Convert CSV table using existing logic
@@ -794,13 +811,14 @@ async function convertFromFileCommand() {
   const config = getConfig();
 
   try {
-    // 打开文件选择对话框（支持 CSV 和 Excel 文件）
+    // 打开文件选择对话框（支持 CSV、Excel 和 RTF 文件）
     const fileUris = await vscode.window.showOpenDialog({
       canSelectMany: true,
       filters: {
-        'Table Files': ['csv', 'xlsx', 'xls', 'xlsm'],
+        'Table Files': ['csv', 'xlsx', 'xls', 'xlsm', 'rtf'],
         'CSV Files': ['csv'],
-        'Excel Files': ['xlsx', 'xls', 'xlsm']
+        'Excel Files': ['xlsx', 'xls', 'xlsm'],
+        'RTF Files': ['rtf']
       },
       title: '选择要转换的表格文件'
     });

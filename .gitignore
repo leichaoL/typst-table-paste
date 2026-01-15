@@ -6,6 +6,10 @@ out/
 # Dependencies
 node_modules/
 
+# Test files
+.vscode-test/
+src/test/
+
 # Test data
 tables/
 
