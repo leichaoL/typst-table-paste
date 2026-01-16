@@ -3,6 +3,9 @@ out/
 *.js
 *.js.map
 
+# Exception: Keep GitHub workflow scripts
+!.github/**/*.js
+
 # Dependencies
 node_modules/
 
