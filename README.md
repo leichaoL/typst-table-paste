@@ -26,13 +26,15 @@ A VSCode extension that automatically converts RTF or CSV tables from the clipbo
 
 Note: Use `Ctrl+Shift+V` instead of `Ctrl+V` to avoid conflicts with other paste extensions (like typst-figure-pastetools).
 
-### Create from CSV/Excel File
+### Create from CSV/Excel/RTF File
 
 1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P`) to open the command palette.
 2. Type "Typst Table Paste: Convert From File".
-3. Select one or more CSV or Excel files to import.
+3. Select one or more CSV, Excel, or RTF files to import.
 4. For Excel files with multiple sheets, choose which sheet(s) to convert.
 5. Tables are saved to `typ_tables/` using source filenames (e.g., `data.csv` → `data.typ`).
+
+**Note on RTF files**: RTF table conversion may not be perfect for all tables. For best results, export to CSV/Excel format first. If you encounter conversion issues, please submit an issue on GitHub.
 
 ### Rename Table Files
 
@@ -47,7 +49,10 @@ All references are automatically updated across workspace.
 
 ### Core Features
 
-- RTF/CSV/Excel table detection and conversion
+- **RTF/CSV/Excel table detection and conversion**
+  - Supports Word RTF, Stata RTF, CSV, and Excel formats
+  - Automatic table structure detection
+  - Preserves borders, alignment, and formatting
 - Preserve significance markers, borders, and alignment
 - Automatic layout for small vs. large tables (≤5 columns: compact, >5 columns: expanded)
 - Smart file naming from source filenames (e.g., `data.csv` → `data.typ`)

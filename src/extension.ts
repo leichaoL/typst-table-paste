@@ -7,6 +7,7 @@ import { parseRTF, isRTFFile } from './parsers/rtfParser';
 import { parseStataTable } from './parsers/stataParser';
 import { parseExcel, getExcelSheetNames, isExcelFile } from './parsers/excelParser';
 import { quickConvert } from './converters/typstConverter';
+import { escapeTypstSpecialChars } from './converters/formatHandler';
 import { Paste2TypConfig } from './utils/types';
 import {
   ensureTypTablesFolder,
@@ -582,6 +583,9 @@ function addPanelTitle(typstCode: string, filename: string, isFirstPanel: boolea
   const columnMatch = typstCode.match(/columns:\s*\(([^)]+)\)/);
   const columnCount = columnMatch ? columnMatch[1].split(',').length : 3;
 
+  // Escape special characters in filename for Typst
+  const escapedFilename = escapeTypstSpecialChars(filename);
+
   // Find where to insert the panel title
   const lines = typstCode.split('\n');
   const resultLines: string[] = [];
@@ -596,11 +600,11 @@ function addPanelTitle(typstCode: string, filename: string, isFirstPanel: boolea
       if (isFirstPanel) {
         // Keep the top border for first panel
         resultLines.push(line);
-        resultLines.push(`  table.cell(colspan: ${columnCount})[*Panel: ${filename}*],`);
+        resultLines.push(`  table.cell(colspan: ${columnCount})[*Panel: ${escapedFilename}*],`);
         resultLines.push('  table.hline(),');
       } else {
         // Replace the top border for subsequent panels
-        resultLines.push(`  table.cell(colspan: ${columnCount})[*Panel: ${filename}*],`);
+        resultLines.push(`  table.cell(colspan: ${columnCount})[*Panel: ${escapedFilename}*],`);
         resultLines.push('  table.hline(),');
       }
       insertedPanel = true;

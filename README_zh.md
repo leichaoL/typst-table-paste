@@ -26,13 +26,15 @@
 
 注意：使用 `Ctrl+Shift+V` 而不是 `Ctrl+V`，以避免与其他粘贴扩展（如 typst-figure-pastetools）冲突。
 
-### 从CSV/Excel文件中创建表格
+### 从CSV/Excel/RTF文件中创建表格
 
 1. 按 `Ctrl+Shift+P`（或 `Cmd+Shift+P`）打开命令面板
 2. 输入 "Typst Table Paste: Convert From File"
-3. 选择 CSV 或 Excel 文件（可多选）进行导入
+3. 选择 CSV、Excel 或 RTF 文件（可多选）进行导入
 4. 对于包含多个工作表的 Excel 文件，选择要转换的工作表
 5. 表格保存到 `typ_tables/`，文件名使用源文件名（例如：`data.csv` → `data.typ`）
+
+**关于 RTF 文件的说明**：RTF 表格转换可能不是对所有表格都完美。为获得最佳效果，建议先导出为 CSV/Excel 格式。如果遇到转换问题，请在 GitHub 上提交 issue。
 
 ### 重命名表格文件
 
@@ -47,7 +49,10 @@
 
 ### 核心功能
 
-- RTF/CSV/Excel 表格识别和转换
+- **RTF/CSV/Excel 表格识别和转换**
+  - 支持 Word RTF、Stata RTF、CSV 和 Excel 格式
+  - 自动检测表格结构
+  - 保留边框、对齐方式和格式
 - 显著性标记、边框、对齐方式等格式保留
 - 小/大表格的自动排版策略（≤5 列：紧凑格式，>5 列：展开格式）
 - 智能文件命名使用源文件名（例如：`data.csv` → `data.typ`）

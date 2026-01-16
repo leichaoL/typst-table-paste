@@ -2,6 +2,30 @@
 
 All notable changes to the "Typst Table Paste" extension will be documented in this file.
 
+## [0.7.0] - 2026-01-16
+
+### Added
+
+- **RTF table import support**: Import tables directly from RTF files (Word, Stata output)
+  - **Note**: RTF conversion may not be perfect for all tables. For best results, export to CSV/Excel format first. If you encounter issues, please submit an issue on GitHub.
+
+### Fixed
+
+- **CSV file title extraction**: Fixed bug where CSV files couldn't automatically use filename as table title
+- **Panel title escaping**: Fixed special character escaping in panel titles when importing multiple files
+
+
+### 新增
+
+- **RTF 表格导入支持**：直接从 RTF 文件导入表格（Word、Stata 输出）
+  - **注意**：RTF 转换可能不是对所有表格都完美。为获得最佳效果，建议先导出为 CSV/Excel 格式。如果遇到问题，请在 GitHub 上提交 issue。
+
+### 修复
+
+- **CSV 文件标题提取**：修复了 CSV 文件无法自动使用文件名作为表格标题的 bug
+- **Panel 标题转义**：修复了导入多个文件时表格标题特殊符号的转义问题
+
+
 ## [0.6.0] - 2026-01-11
 
 ### Added

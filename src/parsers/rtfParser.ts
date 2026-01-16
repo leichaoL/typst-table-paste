@@ -67,9 +67,6 @@ function extractCells(rowContent: string): string[] {
     console.log('[RTF Parser] Using Word format parsing, row length:', rowContent.length);
 
     // 方法2: Word 格式
-    // Word RTF 中，多个单元格可能在同一个段落中，格式如：
-    // \pard...{\loch\f0 content1\cell \loch\f0 content2\cell ...}
-
     // 先找到所有 \cell 的位置（但排除 \cellx）
     const cellPositions: number[] = [];
     let pos = 0;
@@ -93,38 +90,84 @@ function extractCells(rowContent: string): string[] {
       const cellPos = cellPositions[i];
       const cellBlock = rowContent.substring(lastEnd, cellPos);
 
-      // 跳过只包含表格定义的块（没有实际文本）
-      if (!cellBlock.includes('\\loch\\f') && !cellBlock.includes('\\hich\\af')) {
-        console.log(`[RTF Parser] Cell ${i}: Empty (no text markers)`);
-        cells.push(''); // 空单元格
-        lastEnd = cellPos + 5;
-        continue;
-      }
+      // 提取文本内容 - 简化的方法
+      let cellContent = '';
 
-      // 提取文本内容
+      // 首先尝试提取所有可见文本（在字体标记之后）
+      // 匹配模式: \hich\af0\dbch\af31505\loch\f0 TEXT 或 \loch\f0 TEXT
+      const textPattern = /(?:\\hich\\af\d+)?(?:\\dbch\\af\d+)?\\loch\\f\d+\s+([^\\\{]+?)(?=\\|$|\{)/g;
+      let textMatch;
       const textParts: string[] = [];
 
-      // 匹配 \loch\fN 后面的文本
-      const lochPattern = /\\loch\\f\d+\s+([^\\\{]+?)(?=\\cell|\\loch|\\hich|\{|$)/g;
-      let textMatch;
-
-      while ((textMatch = lochPattern.exec(cellBlock)) !== null) {
+      while ((textMatch = textPattern.exec(cellBlock)) !== null) {
         let text = textMatch[1].trim();
-        // 移除可能的右花括号
-        text = text.replace(/\}+$/, '').trim();
-        if (text) {
+        // 移除尾部的 } 字符
+        text = text.replace(/\}+$/g, '').trim();
+        if (text && text.length > 0) {
           textParts.push(text);
         }
       }
 
-      // 检查是否有上标内容（星号）
-      const superPattern = /\\super[^\\]*\\loch\\f\d+\s+([*]+)/g;
-      let superMatch;
-      while ((superMatch = superPattern.exec(cellBlock)) !== null) {
-        textParts.push(superMatch[1]);
+      // 额外检查：查找可能被遗漏的数字（特别是 -0.00 这样的数字）
+      // 匹配模式: \insrsid\d+ 后面跟数字（包括负号和小数点），然后是 }
+      const numberPattern = /\\insrsid\d+\s+(-?\d+\.?\d*)\}/g;
+      let numberMatch;
+      while ((numberMatch = numberPattern.exec(cellBlock)) !== null) {
+        const num = numberMatch[1].trim();
+        if (num && !textParts.some(t => t.includes(num))) {
+          // 将数字插入到开头（因为它通常在星号之前）
+          textParts.unshift(num);
+        }
       }
 
-      const cellContent = textParts.join('').trim();
+      // 如果只有星号，尝试更激进的数字搜索
+      if (textParts.length === 1 && /^\*+$/.test(textParts[0])) {
+        // 尝试查找任何数字模式
+        const aggressiveNumberPattern = /(-?\d+\.?\d*)/g;
+        const foundNumbers: string[] = [];
+        let aggressiveMatch;
+        while ((aggressiveMatch = aggressiveNumberPattern.exec(cellBlock)) !== null) {
+          const num = aggressiveMatch[1];
+          // 过滤掉明显是 RTF 控制代码的数字（如字体编号、ID等）
+          if (num && num !== '0' && num !== '1' && !foundNumbers.includes(num)) {
+            foundNumbers.push(num);
+          }
+        }
+        if (foundNumbers.length > 0) {
+          // 添加第一个找到的数字（通常是实际的数据）
+          textParts.unshift(foundNumbers[0]);
+        }
+      }
+
+      // 如果没有找到文本，检查是否是空单元格
+      if (textParts.length === 0) {
+        // 尝试查找纯文本数字（没有任何 RTF 标记的数字）
+        // 这种情况出现在某些 Word RTF 文件中
+        const plainTextPattern = /\s+(-?\d+\.?\d*)\s*$/;
+        const plainMatch = cellBlock.match(plainTextPattern);
+        if (plainMatch && plainMatch[1]) {
+          const num = plainMatch[1];
+          // 过滤掉明显是 RTF 控制代码的数字
+          if (num !== '0' && num !== '1' && num.length <= 10) {
+            textParts.push(num);
+          }
+        }
+      }
+
+      // 如果还是没有找到文本，标记为空单元格
+      if (textParts.length === 0) {
+        console.log(`[RTF Parser] Cell ${i}: Empty`);
+        cells.push('');
+        lastEnd = cellPos + 5;
+        continue;
+      }
+
+      // 合并所有文本部分
+      cellContent = textParts.join('').trim();
+
+      // 清理文本（移除多余的空格和RTF控制字符）
+      cellContent = cellContent.replace(/\s+/g, ' ').trim();
+
       console.log(`[RTF Parser] Cell ${i}: "${cellContent}"`);
       cells.push(cellContent);
       lastEnd = cellPos + 5;
@@ -158,46 +201,36 @@ export async function parseRTF(content: string): Promise<ParsedTable> {
   console.log(`[RTF Parser] Found ${blocks.length} table blocks`);
 
   // 检查是否有 irow 标记（Word 格式）
-  const hasIrow = blocks.some(block => /\\irow\d+/.test(block[0]));
+  const hasIrow = blocks.some(block => /\\irow\s*\d+/.test(block[0]));
 
   if (hasIrow) {
-    // Word 格式：按 irow 编号分组
+    // Word 格式：处理每个块，跳过没有单元格的块
     console.log('[RTF Parser] Detected Word format (with irow markers)');
-    const rowGroups = new Map<number, string[]>();
 
     for (const block of blocks) {
       const blockContent = block[0];
-      const irowMatch = blockContent.match(/\\irow(\d+)/);
-      if (irowMatch) {
-        const irowNum = parseInt(irowMatch[1]);
-        if (!rowGroups.has(irowNum)) {
-          rowGroups.set(irowNum, []);
-        }
-        rowGroups.get(irowNum)!.push(blockContent);
-      }
-    }
 
-    // 按 irow 编号排序并处理每组
-    const sortedRows = Array.from(rowGroups.entries()).sort((a, b) => a[0] - b[0]);
+      // 检查这个块是否包含实际的单元格标记（不是 \cellx）
+      const hasCellMarkers = /\\cell(?!x)/.test(blockContent);
 
-    for (const [irowNum, blockContents] of sortedRows) {
-      // Word RTF: 每个逻辑行由多个块组成
-      // 尝试从每个块中提取单元格，直到找到有内容的块
-      let cellTexts: string[] = [];
-
-      for (const block of blockContents) {
-        cellTexts = extractCells(block);
-        if (cellTexts.length > 0) {
-          break; // 找到有内容的块，停止搜索
-        }
+      if (!hasCellMarkers) {
+        // 这是一个只包含表格定义的块，跳过
+        console.log('[RTF Parser] Skipping block without cell markers');
+        continue;
       }
 
-      if (cellTexts.length > 0) {
+      const cellTexts = extractCells(blockContent);
+
+      if (cellTexts.length > 0 && cellTexts.some(c => c.trim() !== '')) {
+        // 检测边框标记
+        const hasTopBorder = /\\clbrdrt\\brdrs/.test(blockContent) || /\\brdrt\\brdrs/.test(blockContent);
+        const hasBottomBorder = /\\clbrdrb\\brdrs/.test(blockContent) || /\\brdrb\\brdrs/.test(blockContent);
+
         const cells: TableCell[] = cellTexts.map(text => ({
           content: text,
           alignment: 'center' as const,
-          hasTopBorder: false,
-          hasBottomBorder: false,
+          hasTopBorder: hasTopBorder,
+          hasBottomBorder: hasBottomBorder,
           hasSuperscript: /\*+/.test(text)
         }));
 
