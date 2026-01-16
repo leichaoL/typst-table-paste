@@ -3,8 +3,9 @@ out/
 *.js
 *.js.map
 
-# Exception: Keep GitHub workflow scripts
+# Exception: Keep GitHub workflow scripts and webpack config
 !.github/**/*.js
+!webpack.config.js
 
 # Dependencies
 node_modules/
