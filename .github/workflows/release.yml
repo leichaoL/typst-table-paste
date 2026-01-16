@@ -26,29 +26,39 @@ jobs:
       - name: Check version change
         id: version_check
         run: |
-          # 检查 package.json 是否被修改
-          if git diff HEAD^ HEAD --name-only | grep -q "package.json"; then
-            echo "package.json was modified"
-
-            # 提取版本号
-            OLD_VERSION=$(git show HEAD^:package.json | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+          # 检查是否是手动触发
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger detected"
+            # 手动触发时，直接读取当前版本号
             NEW_VERSION=$(cat package.json | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+            echo "Current version: $NEW_VERSION"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          else
+            # 自动触发时，检查 package.json 是否被修改
+            if git diff HEAD^ HEAD --name-only | grep -q "package.json"; then
+              echo "package.json was modified"
 
-            echo "Old version: $OLD_VERSION"
-            echo "New version: $NEW_VERSION"
+              # 提取版本号
+              OLD_VERSION=$(git show HEAD^:package.json | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+              NEW_VERSION=$(cat package.json | grep '"version"' | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
 
-            # 检查版本号是否真的变化了
-            if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
-              echo "Version changed from $OLD_VERSION to $NEW_VERSION"
-              echo "changed=true" >> $GITHUB_OUTPUT
-              echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+              echo "Old version: $OLD_VERSION"
+              echo "New version: $NEW_VERSION"
+
+              # 检查版本号是否真的变化了
+              if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+                echo "Version changed from $OLD_VERSION to $NEW_VERSION"
+                echo "changed=true" >> $GITHUB_OUTPUT
+                echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+              else
+                echo "Version not changed"
+                echo "changed=false" >> $GITHUB_OUTPUT
+              fi
             else
-              echo "Version not changed"
+              echo "package.json was not modified in this push"
               echo "changed=false" >> $GITHUB_OUTPUT
             fi
-          else
-            echo "package.json was not modified in this push"
-            echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Extract CHANGELOG
