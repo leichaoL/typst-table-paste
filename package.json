@@ -58,6 +58,14 @@
       {
         "command": "typst-table-paste.renameTableFromExplorer",
         "title": "Rename Typst Table"
+      },
+      {
+        "command": "typst-table-paste.roundNumbers",
+        "title": "Typst Table Paste: Round Numbers in Table"
+      },
+      {
+        "command": "typst-table-paste.roundNumbersFromExplorer",
+        "title": "Round Numbers in Table"
       }
     ],
     "keybindings": [
@@ -79,6 +87,11 @@
           "command": "typst-table-paste.renameTableFromInclude",
           "when": "editorTextFocus && editorLangId == typst",
           "group": "1_modification"
+        },
+        {
+          "command": "typst-table-paste.roundNumbers",
+          "when": "resourceExtname == .typ",
+          "group": "typst-table-paste"
         }
       ],
       "explorer/context": [
@@ -86,6 +99,11 @@
           "command": "typst-table-paste.renameTableFromExplorer",
           "when": "resourceExtname == .typ && resourcePath =~ /typ_tables/",
           "group": "7_modification"
+        },
+        {
+          "command": "typst-table-paste.roundNumbersFromExplorer",
+          "when": "resourceExtname == .typ",
+          "group": "typst-table-paste"
         }
       ]
     },
@@ -158,6 +176,13 @@
           "type": "boolean",
           "default": false,
           "description": "Prompt for table filename when pasting from clipboard or importing from file"
+        },
+        "typstTablePaste.roundingDecimalPlaces": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of decimal places for rounding numbers in tables"
         }
       }
     }

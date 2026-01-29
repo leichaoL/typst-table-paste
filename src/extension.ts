@@ -22,6 +22,7 @@ import {
   validateTableFileName,
   fileNameExists,
 } from './utils/fileManager';
+import { processTypstFile, isTypstFile } from './utils/typstFileProcessor';
 
 /**
  * 插件激活函数
@@ -72,12 +73,30 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // 注册四舍五入命令
+  const roundNumbersCmd = vscode.commands.registerCommand(
+    'typst-table-paste.roundNumbers',
+    async () => {
+      await roundNumbersCommand();
+    }
+  );
+
+  // 注册从文件浏览器四舍五入命令
+  const roundNumbersFromExplorerCmd = vscode.commands.registerCommand(
+    'typst-table-paste.roundNumbersFromExplorer',
+    async (uri: vscode.Uri) => {
+      await roundNumbersFromExplorer(uri);
+    }
+  );
+
   context.subscriptions.push(
     convertCommand,
     convertFromFileCmd,
     pasteHandler,
     renameFromIncludeCmd,
-    renameFromExplorerCmd
+    renameFromExplorerCmd,
+    roundNumbersCmd,
+    roundNumbersFromExplorerCmd
   );
 
   // 覆盖默认粘贴行为（如果启用自动转换）
@@ -1129,7 +1148,166 @@ function getConfig(): Paste2TypConfig {
     ]),
     addDividerAfterConstant: config.get<boolean>('addDividerAfterConstant', false),
     promptForTableName: config.get<boolean>('promptForTableName', false),
+    roundingDecimalPlaces: config.get<number>('roundingDecimalPlaces', 3),
   };
+}
+
+/**
+ * 四舍五入表格中的数字
+ */
+async function roundNumbersCommand() {
+  try {
+    // 1. 获取当前编辑器
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showErrorMessage('请先打开一个 .typ 文件');
+      return;
+    }
+
+    // 2. 检查文件类型
+    if (!isTypstFile(editor.document.fileName)) {
+      vscode.window.showErrorMessage('当前文件不是 .typ 文件');
+      return;
+    }
+
+    // 3. 获取配置
+    const config = vscode.workspace.getConfiguration('typstTablePaste');
+    const decimalPlaces = config.get<number>('roundingDecimalPlaces', 3);
+
+    // 4. 询问用户
+    const action = await vscode.window.showQuickPick(
+      [
+        { label: '覆盖当前文件', value: 'overwrite', description: `将数字四舍五入到 ${decimalPlaces} 位小数` },
+        { label: '保存为新文件', value: 'new', description: '创建一个新文件保存结果' }
+      ],
+      { placeHolder: '如何保存四舍五入后的表格？' }
+    );
+    if (!action) {
+      return;
+    }
+
+    // 5. 处理文件
+    const result = await processTypstFile(
+      editor.document.fileName,
+      decimalPlaces
+    );
+
+    // 6. 保存结果
+    if (action.value === 'overwrite') {
+      const edit = new vscode.WorkspaceEdit();
+      const fullRange = new vscode.Range(
+        editor.document.positionAt(0),
+        editor.document.positionAt(editor.document.getText().length)
+      );
+      edit.replace(editor.document.uri, fullRange, result.content);
+      await vscode.workspace.applyEdit(edit);
+      await editor.document.save();
+
+      vscode.window.showInformationMessage(
+        `已将 ${result.processedCount} 个数字四舍五入到 ${decimalPlaces} 位小数`
+      );
+    } else {
+      // 保存为新文件
+      const currentDir = path.dirname(editor.document.fileName);
+      const currentName = path.basename(editor.document.fileName, '.typ');
+      const newFileName = `${currentName}_rounded.typ`;
+      const newFilePath = path.join(currentDir, newFileName);
+
+      fs.writeFileSync(newFilePath, result.content, 'utf-8');
+
+      // 打开新文件
+      const doc = await vscode.workspace.openTextDocument(newFilePath);
+      await vscode.window.showTextDocument(doc);
+
+      vscode.window.showInformationMessage(
+        `已将 ${result.processedCount} 个数字四舍五入并保存到 ${newFileName}`
+      );
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    vscode.window.showErrorMessage(`四舍五入失败: ${errorMessage}`);
+    console.error('四舍五入错误:', error);
+  }
+}
+
+/**
+ * 从文件浏览器四舍五入表格中的数字
+ * @param uri 文件 URI
+ */
+async function roundNumbersFromExplorer(uri: vscode.Uri): Promise<void> {
+  try {
+    // 1. 获取文件路径
+    const filePath = uri.fsPath;
+
+    // 2. 验证是 .typ 文件
+    if (!isTypstFile(filePath)) {
+      vscode.window.showErrorMessage('只能处理 .typ 文件');
+      return;
+    }
+
+    // 3. 获取配置
+    const config = vscode.workspace.getConfiguration('typstTablePaste');
+    const decimalPlaces = config.get<number>('roundingDecimalPlaces', 3);
+
+    // 4. 询问用户
+    const action = await vscode.window.showQuickPick(
+      [
+        { label: '覆盖当前文件', value: 'overwrite', description: `将数字四舍五入到 ${decimalPlaces} 位小数` },
+        { label: '保存为新文件', value: 'new', description: '创建一个新文件保存结果' }
+      ],
+      { placeHolder: '如何保存四舍五入后的表格？' }
+    );
+    if (!action) {
+      return;
+    }
+
+    // 5. 处理文件
+    const result = await processTypstFile(filePath, decimalPlaces);
+
+    // 6. 保存结果
+    if (action.value === 'overwrite') {
+      // 覆盖原文件
+      fs.writeFileSync(filePath, result.content, 'utf-8');
+
+      // 如果文件在编辑器中打开，刷新内容
+      const openDoc = vscode.workspace.textDocuments.find(
+        doc => doc.uri.fsPath === filePath
+      );
+      if (openDoc) {
+        const edit = new vscode.WorkspaceEdit();
+        const fullRange = new vscode.Range(
+          openDoc.positionAt(0),
+          openDoc.positionAt(openDoc.getText().length)
+        );
+        edit.replace(openDoc.uri, fullRange, result.content);
+        await vscode.workspace.applyEdit(edit);
+      }
+
+      vscode.window.showInformationMessage(
+        `已将 ${result.processedCount} 个数字四舍五入到 ${decimalPlaces} 位小数`
+      );
+    } else {
+      // 保存为新文件
+      const currentDir = path.dirname(filePath);
+      const currentName = path.basename(filePath, '.typ');
+      const newFileName = `${currentName}_rounded.typ`;
+      const newFilePath = path.join(currentDir, newFileName);
+
+      fs.writeFileSync(newFilePath, result.content, 'utf-8');
+
+      // 打开新文件
+      const doc = await vscode.workspace.openTextDocument(newFilePath);
+      await vscode.window.showTextDocument(doc);
+
+      vscode.window.showInformationMessage(
+        `已将 ${result.processedCount} 个数字四舍五入并保存到 ${newFileName}`
+      );
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    vscode.window.showErrorMessage(`四舍五入失败: ${errorMessage}`);
+    console.error('四舍五入错误:', error);
+  }
 }
 
 /**

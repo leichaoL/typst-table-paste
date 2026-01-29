@@ -68,4 +68,6 @@ export interface Paste2TypConfig {
   addDividerAfterConstant?: boolean;
   /** 是否在粘贴时提示输入文件名 */
   promptForTableName?: boolean;
+  /** 四舍五入的小数位数 */
+  roundingDecimalPlaces?: number;
 }
