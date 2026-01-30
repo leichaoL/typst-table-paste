@@ -45,6 +45,21 @@ Rename table files with automatic reference updates:
 
 All references are automatically updated across workspace.
 
+### Round Numbers in Tables
+
+Round numbers in existing `.typ` table files to a specified number of decimal places:
+
+- **In editor**: Open a `.typ` file, then use command palette → "Typst Table Paste: Round Numbers in Table"
+- **In explorer**: Right-click any `.typ` file → "Round Numbers in Table"
+- Choose to overwrite the original file or save as a new file
+- Supports multiple number formats:
+  - Normal numbers: `0.123456` → `0.123`
+  - Scientific notation: `1.23456e-5` → `1.235e-5`
+  - Percentages: `12.3456%` → `12.346%`
+  - Parentheses: `(0.045678)` → `(0.046)`
+  - Typst syntax: `0.123456#super[***]` → `0.123#super[***]`
+- Configure decimal places in settings (default: 3)
+
 ## ✨ Features
 
 ### Core Features
@@ -58,6 +73,7 @@ All references are automatically updated across workspace.
 - Smart file naming from source filenames (e.g., `data.csv` → `data.typ`)
 - Rename tables with automatic reference updates (Shift+F2)
 - Auto-number duplicate filenames (e.g., `data.typ`, `data_1.typ`, `data_2.typ`)
+- **Round numbers in tables**: Process existing `.typ` files to round numbers to specified decimal places
 
 ### Academic Paper Support
 - Three-line table format and automatic divider insertion (optional)
@@ -250,6 +266,8 @@ Search for "Typst Table Paste" in VSCode settings.
 | `typstTablePaste.addDividerAfterConstant` | `false` | Add a divider after the `Constant` row |
 | `typstTablePaste.tableFolder` | `"typ_tables"` | Folder name for saving table files |
 | `typstTablePaste.includeTemplate` | `"#figure(include \"{path}\")"` | Template for table references |
+| `typstTablePaste.promptForTableName` | `false` | Prompt for table filename when pasting from clipboard or importing from file |
+| `typstTablePaste.roundingDecimalPlaces` | `3` | Number of decimal places for rounding numbers in tables (0-10) |
 
 Example `settings.json`:
 
@@ -260,7 +278,8 @@ Example `settings.json`:
   "typstTablePaste.addDividerAfterConstant": false,
   "typstTablePaste.autoMathMode": false,
   "typstTablePaste.tableFolder": "typ_tables",
-  "typstTablePaste.includeTemplate": "#figure(include \"{path}\")"
+  "typstTablePaste.includeTemplate": "#figure(include \"{path}\")",
+  "typstTablePaste.roundingDecimalPlaces": 3
 }
 ```
 

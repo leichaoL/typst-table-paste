@@ -2,6 +2,28 @@
 
 All notable changes to the "Typst Table Paste" extension will be documented in this file.
 
+## [0.8.0] - 2026-01-30
+
+### Added
+
+- **Number rounding feature**: Round numbers in existing `.typ` table files
+  - Two ways to trigger: from editor or right-click in file explorer
+  - Choose to overwrite or save as new file
+  - New setting: `roundingDecimalPlaces` (default: 3 decimal places)
+- **Internationalization (i18n)**: Commands and settings now display in your VSCode language
+  - English (default)
+  - Simplified Chinese (简体中文)
+
+### 新增
+
+- **数字四舍五入功能**：对已有的 `.typ` 表格文件中的数字进行四舍五入
+  - 两种触发方式：从编辑器或在文件浏览器中右键
+  - 可选择覆盖原文件或保存为新文件
+  - 新增设置：`roundingDecimalPlaces`（默认 3 位小数）
+- **国际化支持**：命令和设置现在会根据 VSCode 语言显示
+  - 英文（默认）
+  - 简体中文
+
 ## [0.7.0] - 2026-01-16
 
 ### Added

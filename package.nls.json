@@ -1,0 +1,25 @@
+{
+  "extension.displayName": "Typst Table Paste",
+  "extension.description": "Paste and convert RTF/CSV tables to Typst table syntax",
+
+  "command.convertTable.title": "Typst Table Paste: Convert Table",
+  "command.paste.title": "Typst Table Paste: Paste and Convert",
+  "command.convertFromFile.title": "Typst Table Paste: Convert from File",
+  "command.renameTableFromInclude.title": "Rename Table File",
+  "command.renameTableFromExplorer.title": "Rename Typst Table",
+  "command.roundNumbers.title": "Typst Table Paste: Round Numbers in Table",
+  "command.roundNumbersFromExplorer.title": "Round Numbers in Table",
+
+  "config.autoConvert.description": "Automatically convert tables when pasting",
+  "config.preserveSuperscript.description": "Preserve significance markers as superscript (*** → #super[***])",
+  "config.preserveBorders.description": "Preserve table border styles",
+  "config.preserveAlignment.description": "Preserve table alignment",
+  "config.threeLineTable.description": "Use three-line table format (top, header bottom, bottom lines only)",
+  "config.autoMathMode.description": "Automatically convert variable names and R² to math mode ($variable$)",
+  "config.mathModeExclusions.description": "List of terms to exclude from math mode conversion",
+  "config.addDividerAfterConstant.description": "Add a horizontal line (table.hline()) after the 'Constant' row to separate it from fixed effects section",
+  "config.tableFolder.description": "Folder name for saving table files",
+  "config.includeTemplate.description": "Template for table references, {path} will be replaced with the table file path",
+  "config.promptForTableName.description": "Prompt for table filename when pasting from clipboard or importing from file",
+  "config.roundingDecimalPlaces.description": "Number of decimal places for rounding numbers in tables"
+}

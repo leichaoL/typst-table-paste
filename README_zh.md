@@ -29,7 +29,7 @@
 ### 从CSV/Excel/RTF文件中创建表格
 
 1. 按 `Ctrl+Shift+P`（或 `Cmd+Shift+P`）打开命令面板
-2. 输入 "Typst Table Paste: Convert From File"
+2. 输入 "Typst 表格粘贴: 从文件转换"
 3. 选择 CSV、Excel 或 RTF 文件（可多选）进行导入
 4. 对于包含多个工作表的 Excel 文件，选择要转换的工作表
 5. 表格保存到 `typ_tables/`，文件名使用源文件名（例如：`data.csv` → `data.typ`）
@@ -40,10 +40,25 @@
 
 重命名表格文件并自动更新所有引用：
 
-- **在编辑器中**：在 include 语句行按 `Shift+F2` 或右键 → "Rename Table File"
-- **在文件浏览器中**：右键点击 `typ_tables/` 中的 `.typ` 文件 → "Rename Typst Table"
+- **在编辑器中**：在 include 语句行按 `Shift+F2` 或右键 → "重命名表格文件"
+- **在文件浏览器中**：右键点击 `typ_tables/` 中的 `.typ` 文件 → "重命名 Typst 表格"
 
 所有引用会在工作区中自动更新。
+
+### 表格数字四舍五入
+
+对已有的 `.typ` 表格文件中的数字进行四舍五入到指定小数位数：
+
+- **在编辑器中**：打开 `.typ` 文件，然后使用命令面板 → "Typst 表格粘贴: 表格数字四舍五入"
+- **在文件浏览器中**：右键点击任意 `.typ` 文件 → "表格数字四舍五入"
+- 可选择覆盖原文件或保存为新文件
+- 支持多种数字格式：
+  - 普通数字：`0.123456` → `0.123`
+  - 科学计数法：`1.23456e-5` → `1.235e-5`
+  - 百分比：`12.3456%` → `12.346%`
+  - 括号：`(0.045678)` → `(0.046)`
+  - Typst 语法：`0.123456#super[***]` → `0.123#super[***]`
+- 在设置中配置小数位数（默认：3）
 
 ## ✨ 功能特性
 
@@ -58,6 +73,7 @@
 - 智能文件命名使用源文件名（例如：`data.csv` → `data.typ`）
 - 重命名表格并自动更新引用（Shift+F2）
 - 重复文件名自动编号（例如：`data.typ`、`data_1.typ`、`data_2.typ`）
+- **表格数字四舍五入**：处理已有的 `.typ` 文件，将数字四舍五入到指定小数位数
 
 ### 学术论文支持
 
@@ -256,6 +272,8 @@ ln(population),0.23**,0.25**
 | `typstTablePaste.addDividerAfterConstant` | `false` | 在 `Constant` 行后添加分割线 |
 | `typstTablePaste.tableFolder` | `"typ_tables"` | 保存表格文件的文件夹名称 |
 | `typstTablePaste.includeTemplate` | `"#figure(include \"{path}\")"` | 引用模板 |
+| `typstTablePaste.promptForTableName` | `false` | 从剪贴板粘贴或从文件导入时提示输入表格文件名 |
+| `typstTablePaste.roundingDecimalPlaces` | `3` | 表格中数字四舍五入的小数位数（0-10） |
 
 `settings.json` 示例：
 
@@ -266,7 +284,8 @@ ln(population),0.23**,0.25**
   "typstTablePaste.addDividerAfterConstant": false,
   "typstTablePaste.autoMathMode": false,
   "typstTablePaste.tableFolder": "typ_tables",
-  "typstTablePaste.includeTemplate": "#figure(include \"{path}\")"
+  "typstTablePaste.includeTemplate": "#figure(include \"{path}\")",
+  "typstTablePaste.roundingDecimalPlaces": 3
 }
 ```
 

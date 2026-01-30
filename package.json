@@ -2,7 +2,7 @@
   "name": "typst-table-paste",
   "displayName": "Typst Table Paste",
   "description": "Paste and convert RTF/CSV tables to Typst table syntax",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "leichaoL",
   "author": "leichaoL",
   "license": "MIT",
@@ -41,31 +41,31 @@
     "commands": [
       {
         "command": "typst-table-paste.convertTable",
-        "title": "Typst Table Paste: Convert Table"
+        "title": "%command.convertTable.title%"
       },
       {
         "command": "typst-table-paste.paste",
-        "title": "Typst Table Paste: Paste and Convert"
+        "title": "%command.paste.title%"
       },
       {
         "command": "typst-table-paste.convertFromFile",
-        "title": "Typst Table Paste: Convert from File"
+        "title": "%command.convertFromFile.title%"
       },
       {
         "command": "typst-table-paste.renameTableFromInclude",
-        "title": "Rename Table File"
+        "title": "%command.renameTableFromInclude.title%"
       },
       {
         "command": "typst-table-paste.renameTableFromExplorer",
-        "title": "Rename Typst Table"
+        "title": "%command.renameTableFromExplorer.title%"
       },
       {
         "command": "typst-table-paste.roundNumbers",
-        "title": "Typst Table Paste: Round Numbers in Table"
+        "title": "%command.roundNumbers.title%"
       },
       {
         "command": "typst-table-paste.roundNumbersFromExplorer",
-        "title": "Round Numbers in Table"
+        "title": "%command.roundNumbersFromExplorer.title%"
       }
     ],
     "keybindings": [
@@ -113,32 +113,32 @@
         "typstTablePaste.autoConvert": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically convert tables when pasting"
+          "description": "%config.autoConvert.description%"
         },
         "typstTablePaste.preserveSuperscript": {
           "type": "boolean",
           "default": true,
-          "description": "Preserve significance markers as superscript (*** → #super[***])"
+          "description": "%config.preserveSuperscript.description%"
         },
         "typstTablePaste.preserveBorders": {
           "type": "boolean",
           "default": true,
-          "description": "Preserve table border styles"
+          "description": "%config.preserveBorders.description%"
         },
         "typstTablePaste.preserveAlignment": {
           "type": "boolean",
           "default": true,
-          "description": "Preserve table alignment"
+          "description": "%config.preserveAlignment.description%"
         },
         "typstTablePaste.threeLineTable": {
           "type": "boolean",
           "default": false,
-          "description": "Use three-line table format (top, header bottom, bottom lines only)"
+          "description": "%config.threeLineTable.description%"
         },
         "typstTablePaste.autoMathMode": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically convert variable names and R² to math mode ($variable$)"
+          "description": "%config.autoMathMode.description%"
         },
         "typstTablePaste.mathModeExclusions": {
           "type": "array",
@@ -155,34 +155,34 @@
             "Industry FE",
             "Country FE"
           ],
-          "description": "List of terms to exclude from math mode conversion"
+          "description": "%config.mathModeExclusions.description%"
         },
         "typstTablePaste.addDividerAfterConstant": {
           "type": "boolean",
           "default": false,
-          "description": "Add a horizontal line (table.hline()) after the 'Constant' row to separate it from fixed effects section"
+          "description": "%config.addDividerAfterConstant.description%"
         },
         "typstTablePaste.tableFolder": {
           "type": "string",
           "default": "typ_tables",
-          "description": "Folder name for saving table files"
+          "description": "%config.tableFolder.description%"
         },
         "typstTablePaste.includeTemplate": {
           "type": "string",
           "default": "#figure(include \"{path}\")",
-          "description": "Template for table references, {path} will be replaced with the table file path"
+          "description": "%config.includeTemplate.description%"
         },
         "typstTablePaste.promptForTableName": {
           "type": "boolean",
           "default": false,
-          "description": "Prompt for table filename when pasting from clipboard or importing from file"
+          "description": "%config.promptForTableName.description%"
         },
         "typstTablePaste.roundingDecimalPlaces": {
           "type": "number",
           "default": 3,
           "minimum": 0,
           "maximum": 10,
-          "description": "Number of decimal places for rounding numbers in tables"
+          "description": "%config.roundingDecimalPlaces.description%"
         }
       }
     }
