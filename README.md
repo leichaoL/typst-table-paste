@@ -1,11 +1,11 @@
 # Typst Table Paste
 
-[![en](https://img.shields.io/badge/lang-English-red.svg)](README.md)
-[![cn](https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-yellow.svg)](README_zh.md)
-[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
-![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/i/leichaoL.typst-table-paste.svg)
-[![Version](https://img.shields.io/visual-studio-marketplace/v/leichaoL.typst-table-paste)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
-[![License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
+[![en](https://img.shields.io/badge/lang-English-red.svg)](./README.md)
+[![cn](https://img.shields.io/badge/语言-中文-yellow.svg)](./README_zh.md)
+[![VS Code Marketplace](https://vsmarketplacebadges.dev/version-short/leichaoL.typst-table-paste.svg?label=VS%20Code)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
+[![VS Code Installs](https://vsmarketplacebadges.dev/installs-short/leichaoL.typst-table-paste.svg?label=VS%20Code%20installs)](https://marketplace.visualstudio.com/items?itemName=leichaoL.typst-table-paste)
+[![GitHub Downloads](https://img.shields.io/github/downloads/leichaoL/typst-table-paste/total.svg)](https://github.com/leichaoL/typst-table-paste/releases)
+[![GitHub License](https://img.shields.io/github/license/leichaoL/typst-table-paste)](https://github.com/leichaoL/typst-table-paste/blob/main/LICENSE)
 
 English | [简体中文](README_zh.md)
 
